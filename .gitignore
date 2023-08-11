@@ -1,3 +1,6 @@
-slides* ## not sure if these will be used, and no need to upload them
+slides*
 .Rproj.user
 .Rhistory
+raw_data*
+*.Rproj
+*.DS_Store
