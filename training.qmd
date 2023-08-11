@@ -35,17 +35,103 @@ This tutorial is designed to introduce you to the nuts and bolts of processing m
 First things first: we need to organize our data! If you didn't bring your own data, you will find the files that we work with today under `raw_data`, and we will use this location throughout the tutorial today.
 
 ```{r}
+library(dada2)
+
 setwd("~/Documents/training/16S-data-processing/")
 read_indicator <- "_R1"
-all_fastqs <- list.files("raw_data/")
+all_fastqs <- list.files("raw_data", full.names = T)
 all_fastqs
+r1_fastqs <- all_fastqs[grepl(read_indicator, all_fastqs)]
+r2_fastqs <- all_fastqs[!grepl(read_indicator, all_fastqs)]
+r1_fastqs
+r2_fastqs
 ```
 
 ## Quality Filtering and Trimming
 
+First, let's use the `dada2` package's ability to tell us a little bit more about the quality profile of our samples. You may have already seen this for your data if you used Nephele's QC pipeline, but this allows us to take a look at our data again before we apply filtering and trimming.
+
+```{r}
+plotQualityProfile(r1_fastqs)
+plotQualityProfile(r2_fastqs)
+
+```
+
+Given this information, we will use the `filterAndTrim` function to clean our data. Before we start, we need somewhere for our filtered reads to go, so we will make those paths here. Keep in mind that I'm performing very simple string modification, but you may need to do something more complex for your data and samples.
+
+```{r}
+r1_filt <- gsub("raw_data", "filtered", r1_fastqs)
+r2_filt <- gsub("raw_data", "filtered", r2_fastqs)
+## In my case, the filtered directory could exist before I make the document -- this `unlink` function just makes sure it's not there when I run filterAndTrim
+unlink("filtered/", recursive = T)
+out <- filterAndTrim(r1_fastqs, r1_filt, r2_fastqs, r2_filt, truncLen=c(190, 130), maxN=0, maxEE=2, truncQ=5, rm.phix = TRUE, compress=TRUE, multithread = F, verbose=T)
+out
+```
+
 ## Denoise Reads
 
+```{r}
+r1_err <- learnErrors(r1_filt, multithread=F, verbose=T)
+r2_err <- learnErrors(r2_filt, multithread=F, verbose=T)
+
+plotErrors(r1_err, nominalQ = T)
+plotErrors(r2_err, nominalQ = T)
+
+r1_dada <- dada(r1_filt, r1_err)
+r2_dada <- dada(r2_filt, r2_err)
+```
+
 ## Merge Reads
+
+```{r}
+merged_reads <- mergePairs(r1_dada, r1_filt, r2_dada, r2_filt, verbose=TRUE, minOverlap = 25)
+head(merged_reads[[2]])
+```
+
+## Make Sequence Table
+
+```{r}
+seq_table <- makeSequenceTable(merged_reads)
+dim(seq_table)
+```
+
+From this information, we can see that there are three rows for each of the three samples and there are 3,628 columns for each of the sequence variants.
+
+We can use basic R functions to explore the dataset, much like we would any table of counts.
+
+Below is the distribution of the sequence lengths:
+
+```{r}
+table(nchar(getSequences(seq_table)))
+```
+
+::: {.callout-tip appearance="simple"}
+## Filter for sequence length!
+
+If you look at the table and find that you have sequences that are much larger or smaller than your target amplicon, you can remove through basic R commands like: `filt_seq_table <- seq_table[, nchar(getSequences(seq_table)) >= median(nchar(getSequences(seq_table))]`
+:::
+
+## Remove Chimeras
+
+```{r}
+chimera_check <- removeBimeraDenovo(seq_table, method="pooled", verbose=T)
+dim(chimera_check)
+```
+
+::: callout-important
+## Workflow Checkpoint!
+
+Let's take a look at how our data looks so far in a nice, convenient table!
+
+```{r}
+getN <- function(x) sum(getUniques(x))
+track <- cbind(out, sapply(r1_dada, getN), sapply(r2_dada, getN), sapply(merged_reads, getN), rowSums(chimera_check))
+colnames(track) <- c("input","filtered","denoised_r1","denoised_r2","merged","nonchimeric")
+track
+```
+
+As you can see, there was a slight loss of reads during chimera checking for these samples. For now, it isn't enough to go back and double-check our parameters, but if you find that you lose about half of our reads due to chimeras, you may need to revisit the chimera method. For instance, we actually used the "pooled" chimera checking method because we lost many more sequences with the "consensus" chimera checking method, but for other data, you may need to look further back.
+:::
 
 ## Assign Taxonomy
 
