@@ -1,0 +1,54 @@
+---
+title: "16S Data Processing Training"
+author: Katie McCauley from the Bioinformatics and Computational Biology Branch (BCBB)
+format: 
+  html:
+    toc: true
+    toc-location: left
+    number-sections: true
+    embed-resources: true
+    code-overflow: wrap
+    theme: yeti
+editor: visual
+---
+
+## Introduction
+
+Thank you for joining us for this 16S rRNA microbiome data processing tutorial! Before we jump in, let's start by going over our learning objectives for the technical part of our training.
+
+-   Check the Quality of Your Microbiome Data
+
+-   Develop Amplicon Sequence Variants (ASVs) using Divisive Amplicon Denoising Algorithm (DADA2)
+
+-   Assign taxonomy to the species level
+
+-   Make a phylogenetic tree
+
+-   Collate this data in a `phyloseq` object for later analysis
+
+This tutorial is designed to introduce you to the nuts and bolts of processing microbiome data. You may find that after you finish this tutorial, you start processing your data through other pipelines like Nephele[^1], but hopefully some of the concepts we cover today will guide how you approach and review your data.
+
+[^1]: Disclaimer: The tools, functions and options that we will use today are not precisely the ones used by Nephele
+
+## Find and Organize our Data
+
+First things first: we need to organize our data! If you didn't bring your own data, you will find the files that we work with today under `raw_data`, and we will use this location throughout the tutorial today.
+
+```{r}
+setwd("~/Documents/training/16S-data-processing/")
+read_indicator <- "_R1"
+all_fastqs <- list.files("raw_data/")
+all_fastqs
+```
+
+## Quality Filtering and Trimming
+
+## Denoise Reads
+
+## Merge Reads
+
+## Assign Taxonomy
+
+## Make Phylogenetic Tree
+
+## Generate a Phyloseq Object
