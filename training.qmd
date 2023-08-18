@@ -14,7 +14,9 @@ editor: visual
 
 ## Introduction
 
-Thank you for joining us for this 16S rRNA microbiome data processing tutorial! Before we jump in, let's start by going over our learning objectives for the technical part of our training.
+Thank you for joining us for this 16S rRNA microbiome data processing tutorial! Before we jump in, let's start by going over our learning objectives for the technical part.
+
+-   Identify and Remove Primers and Adapters (if present)
 
 -   Check the Quality of Your Microbiome Data
 
@@ -26,7 +28,7 @@ Thank you for joining us for this 16S rRNA microbiome data processing tutorial! 
 
 -   Collate this data in a `phyloseq` object for later analysis
 
-This tutorial is designed to introduce you to the nuts and bolts of processing microbiome data. You may find that after you finish this tutorial, you start processing your data through other pipelines like Nephele[^1], but hopefully some of the concepts we cover today will guide how you approach and review your data.
+This tutorial is designed to introduce you to the nuts and bolts of turning sequencing data into analyzable counts with emphasis on. You may find that after you finish this tutorial, you start processing your data through other pipelines like Nephele[^1], but hopefully some of the concepts we cover today will guide how you approach and explore your data.
 
 [^1]: Disclaimer: The tools, functions and options that we will use today are not precisely the ones used by Nephele
 
@@ -47,6 +49,28 @@ r1_fastqs
 r2_fastqs
 ```
 
+## Identifying Primers and Adapters
+
+For the purposes of our discussion, I'm going to use R to ask if there are any primers in our sequencing data. Our data was derived from a subset of samples sequenced in this manuscript (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6129204/). It uses the V4 region of the 16S rRNA gene, and uses 515F and 806R primers. You can get the primer sequences from the Earth Microbiome Project's website (https://earthmicrobiome.org/protocols-and-standards/16s/). You may need to obtain different sequences for your primer strategy, but the overall code to search for our (known) primers remains the same.
+
+```{r}
+library(ShortRead)
+library(Biostrings)
+FWD <- "GTGCCAGCMGCCGCGGTAA"
+REV <- "GGACTACHVGGGTWTCTAAT"
+
+primerHits <- function(primer, fn) {
+  nhits <- vcountPattern(primer, sread(readFastq(fn)), fixed = FALSE)
+  return(sum(nhits > 0))
+}
+sapply(FWD, primerHits, r1_fastqs)
+sapply(REV, primerHits, r2_fastqs)
+nchar(FWD)
+nchar(REV)
+```
+
+We indeed have primer sequences! For our purposes, we'll use DADA2's filterAndTrim function to help us remove them before analysis.
+
 ## Quality Filtering and Trimming
 
 First, let's use the `dada2` package's ability to tell us a little bit more about the quality profile of our samples. You may have already seen this for your data if you used Nephele's QC pipeline, but this allows us to take a look at our data again before we apply filtering and trimming.
@@ -64,7 +88,7 @@ r1_filt <- gsub("raw_data", "filtered", r1_fastqs)
 r2_filt <- gsub("raw_data", "filtered", r2_fastqs)
 ## In my case, the filtered directory could exist before I make the document -- this `unlink` function just makes sure it's not there when I run filterAndTrim
 unlink("filtered/", recursive = T)
-out <- filterAndTrim(r1_fastqs, r1_filt, r2_fastqs, r2_filt, truncLen=c(190, 130), maxN=0, maxEE=2, truncQ=5, rm.phix = TRUE, compress=TRUE, multithread = F, verbose=T)
+out <- filterAndTrim(r1_fastqs, r1_filt, r2_fastqs, r2_filt, trimLeft=c(19,20), truncLen=c(200, 140), maxN=0, maxEE=2, truncQ=5, rm.phix = TRUE, compress=TRUE, multithread = F, verbose=T)
 out
 ```
 
@@ -99,7 +123,7 @@ From this information, we can see that there are three rows for each of the thre
 
 We can use basic R functions to explore the dataset, much like we would any table of counts.
 
-Below is the distribution of the sequence lengths:
+Below is the distribution of the sequence lengths. Notice that most sequences are 253 bases long, which is how long the V4 region is. If you're unsure if you have primers, this can be a good point to sanity check.
 
 ```{r}
 table(nchar(getSequences(seq_table)))
@@ -114,7 +138,7 @@ If you look at the table and find that you have sequences that are much larger o
 ## Remove Chimeras
 
 ```{r}
-chimera_check <- removeBimeraDenovo(seq_table, method="pooled", verbose=T)
+chimera_check <- removeBimeraDenovo(seq_table, verbose=T)
 dim(chimera_check)
 ```
 
@@ -135,6 +159,22 @@ As you can see, there was a slight loss of reads during chimera checking for the
 
 ## Assign Taxonomy
 
+We now have `{r} ncol(chimera_check)` sequence variants and we want to determine what bacteria they are assigned to. In order to do this, we need to download specially-formatted databases (you can find several different databases [here](https://benjjneb.github.io/dada2/training.html), some of which are contributed by outside teams). For our purposes, we'll download the [SILVA database](https://zenodo.org/record/4587955)\^\[Quast C, Pruesse E, Yilmaz P, Gerken J, Schweer T, Yarza P, Peplies J, Glöckner FO (2013) The SILVA ribosomal RNA gene database project: improved data processing and web-based tools. Nucl. Acids Res. 41 (D1): D590-D596.\]. You'll need all three files and we'll install them to a folder called `databases` that is in our working directory.
+
+```{r}
+taxa <- assignTaxonomy(chimera_check, "databases/silva_nr99_v138.1_train_set.fa.gz", multithread=F, verbose=T, minBoot = 80)
+taxa_print <- taxa
+rownames(taxa_print) <- NULL
+head(taxa_print,10)
+```
+
 ## Make Phylogenetic Tree
+
+Let's arrange our unique sequences into a phylogenetic tree so that we know how similar they are to each other. This tree can be used for statistical questions or visualizations later.
+
+```{r}
+library(DECIPHER)
+aligned <- DECIPHER::AlignSeqs(DNAStringSet(getSequences(chimera_check)))
+```
 
 ## Generate a Phyloseq Object

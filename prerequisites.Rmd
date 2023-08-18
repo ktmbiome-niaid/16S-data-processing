@@ -5,7 +5,11 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 
-We're excited you're joining us for the upcoming 16S rRNA data processing training! This document is intended to help set up your environment before joining the class so we can jump right in with analyzing data.
+We're excited you're joining us for the upcoming 16S rRNA data processing training! This document is intended to help set up your computer and gather data before joining the workshop.
+
+Workshop Details:
+Date:
+Location:
 
 ## Computer Setup
 
@@ -20,7 +24,9 @@ cat(readLines("install.R"), sep="\n")
 
 ## Bringing Your Own Data
 
-We plan to provide you with data to use on your own computer for analyzing during the tutorial. However, if you would like to analyze your own data, you are more than welcome to bring some! If you choose to go this route, please be aware that your data will need to satisfy certain crteria.
+We plan to provide you with data to use on your own computer for analyzing during the tutorial. However, if you would like to analyze your own data, you are more than welcome to bring some! If you choose to go this route, please be aware that your data will need to satisfy certain criteria.
+
+### Check for Quality Information
 
 First, you will need FASTQ-formatted data, which means raw sequence data with quality information. If you look at your files in a text editor (like TextEdit, Notepad++, vim, Sublime, etc), they may look something like this:
 
@@ -37,12 +43,22 @@ NGACTACTGGGGTTTCTAATCCTGTTCGCTACCCACGCTTTCGAGCCTCAGCGTCAGTTACAAGCCAGAGAGCCGCTTTC
 
 We will cover what all of these letters mean when you join us, but to simply confirm that you have "FASTQ" data, you want to look for the plus signs every few lines.
 
-Second, these files need to be separated by sample ("demultiplexed"), so if you are analyzing 20 samples, you'll need to have 40 files. This also brings up another point -- that while you can bring single-end data to the tutorial, we will be focusing on paired-end data where there are forward and reverse reads that we need to merge together. I will try to point out when a modification for single-end data is needed, but will be unable to troubleshoot issues during the tutorial.
+### Ensure files are "demultiplexed"
+
+Second, these files need to be separated by sample ("demultiplexed"), so if you are analyzing 20 samples, you'll need to have 40 files. This should be the default for most FASTQ-generating software now, but it's always good to check.
+
+This also brings up another point -- we will be focusing on paired-end data where there are forward and reverse reads that we need to merge together. You are welcome to bring single-end data, and I will do my best to point out the modifications that are needed to analyze the data.
+
+### Get to know the data's sequencing strategy
+
+If you're using amplicon data sequenced.
 
 The sequence data also needs to be without non-biological sequences, including primers and adapters. You can check for the presence of these with a tool called [FASTQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/), and remove them with tools like [fastp](https://github.com/OpenGene/fastp), [trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic), or [cutadapt](https://cutadapt.readthedocs.io/en/stable/). Alternatively, you can submit your data to [Nephele](https://nephele.niaid.nih.gov) under the "Pre-process" tab, which uses several of these tools without the need for the command line^[https://nephele.niaid.nih.gov/details_qc/]. For now, there is no need to worry about quality trimming, and please do not merge paired-end reads -- we'll do both with DADA2. If you run into any issues, feel free to e-mail nephelesupport@nih.gov.
 
-Finally, if you have a large dataset, consider only working on ~5-10 samples during the workshop. The methods we use should be flexible enough that you can apply the concepts to more samples after the workshop, and we're always available for questions! (bioinformatics@niaid.nih.gov).
+Finally, if you have a large dataset, consider only working on ~5-10 samples during the workshop. The methods we use should be flexible enough that you can apply the concepts to more samples after the workshop, and we're always available for questions! (bioinformatics@niaid.nih.gov)
+
+Looking forward to having you!
 
 ## Resources
 
-We plan to draw heavily from the (tutorial developed by Benjamin Callahan for DADA2)[https://benjjneb.github.io/dada2/tutorial.html], and encourage you to scan that tutorial prior to the training.
+We plan to draw heavily from the [tutorial developed by Benjamin Callahan for DADA2](https://benjjneb.github.io/dada2/tutorial.html), and encourage you to scan that tutorial prior to the training.

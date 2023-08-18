@@ -5,3 +5,4 @@ raw_data*
 *.Rproj
 *.DS_Store
 filtered*
+databases*
