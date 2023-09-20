@@ -57,15 +57,17 @@ If you can, gather some information about the sequencing data which you can typi
 
 - How long is the region of interest?
 
-### Demultiplex The Data
+### Confirm Data is "Demultiplexed"
 
-Second, these files need to be separated by sample ("demultiplexed"). This should be the default for most FASTQ-generating software now, but it's always good to check. To confirm, you should either have one or two files per sample. If you have two files per sample, this is typically "paired-end" which means that the forward reads are separate from the reverse reads, and this is typically noted by a "_1"/"_2" or "_R1"/"_R2" somewhere in the file name.
+These files need to be separated by sample ("demultiplexed"). This should be the default for most FASTQ-generating software now, but it's always good to check. To confirm, you should either have one or two files per sample. If you have two files per sample, this is typically "paired-end" which means that the forward reads are separate from the reverse reads, and this is typically noted by a "_1"/"_2" or "_R1"/"_R2" somewhere in the file name.
 
-This also brings up another point -- we will be focusing on paired-end data where there are forward and reverse reads that we need to merge together. You are welcome to bring single-end data, and I will do my best to point out the modifications that are needed to analyze the data.
+If your data is not demultiplexed, or you're unsure, and you could use some help, feel free to reach out to Katie before the workshop (kathryn.mccauley@nih.gov).
+
+This also brings up another point -- we will be focusing on paired-end data. You are welcome to bring single-end data, and I will do my best to point out the modifications needed to analyze the data.
 
 ### Consider a Subset
 
-Finally, if you have a large dataset, consider only working on ~5-10 samples during the workshop. The methods we use should be flexible enough that you can apply the concepts to more samples after the workshop, and we're always available for questions! (bioinformatics@niaid.nih.gov)
+Finally, if you have a large dataset, consider only working on ~10-20 samples during the workshop. The methods we use should be flexible enough that you can apply the concepts to more samples after the workshop, and we're always available for questions! (bioinformatics@niaid.nih.gov)
 
 Looking forward to having you!
 
