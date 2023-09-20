@@ -1,7 +1,8 @@
 Prerequisites for 16S Data Processing Training
 ================
-Katie McCauley[^1]
-2023-09-20
+Katie McCauley & Lauren Krausfeldt
+
+Date: 2023-09-20
 
 We’re excited you’re joining us for the upcoming 16S rRNA data
 processing training! This document is intended to help set up your
@@ -9,7 +10,7 @@ computer and gather data before joining the workshop.
 
 **Workshop Details:**
 
-Date: October 4th, 2023 (2-5pm ET)
+Date: October 2nd, 2023 (2-5pm ET)
 
 ## Computer Setup
 
@@ -108,6 +109,3 @@ Looking forward to having you!
 We plan to draw heavily from the [tutorial developed by Benjamin
 Callahan for DADA2](https://benjjneb.github.io/dada2/tutorial.html), and
 encourage you to scan that tutorial prior to the training.
-
-[^1]: Bioinformatics and Computational Biology Branch (BCBB), OCICB,
-    NIAID, NIH
