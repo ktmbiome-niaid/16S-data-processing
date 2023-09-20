@@ -1,8 +1,8 @@
 slides*
 .Rproj.user
 .Rhistory
-raw_data*
 *.Rproj
 *.DS_Store
 filtered*
 databases*
+DownloadingFromSRA_files*

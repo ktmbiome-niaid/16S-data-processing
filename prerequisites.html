@@ -11,7 +11,7 @@
 
 <meta name="author" content="Katie McCauley" />
 
-<meta name="date" content="2023-08-18" />
+<meta name="date" content="2023-09-20" />
 
 <title>Prerequisites for 16S Data Processing Training</title>
 
@@ -353,15 +353,16 @@ display: none;
 <h1 class="title toc-ignore">Prerequisites for 16S Data Processing
 Training</h1>
 <h4 class="author">Katie McCauley<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a></h4>
-<h4 class="date">2023-08-18</h4>
+<h4 class="date">2023-09-20</h4>
 
 </div>
 
 
 <p>We’re excited you’re joining us for the upcoming 16S rRNA data
 processing training! This document is intended to help set up your
-environment before joining the class so we can jump right in with
-analyzing data.</p>
+computer and gather data before joining the workshop.</p>
+<p><strong>Workshop Details:</strong></p>
+<p>Date: October 4th, 2023 (2-5pm ET)</p>
 <div id="computer-setup" class="section level2">
 <h2>Computer Setup</h2>
 <p>For now, we’ll do most of the analysis on your personal computer in R
@@ -374,12 +375,19 @@ open a fresh installation of Rstudio – it should have a carrot sign
 <code>&gt;</code>). The script can also be found at
 <code>install.R</code>.</p>
 <pre class="r"><code>setwd(&quot;~/Documents/training/16S-data-processing/&quot;)
-cat(readLines(&quot;install.R&quot;), sep=&quot;\n&quot;)</code></pre>
+cat(readLines(&quot;install.R&quot;, warn=FALSE), sep=&quot;\n&quot;)</code></pre>
 <pre><code>## This script lists all of the packages that need to be installed
 
-if (!requireNamespace(&quot;BiocManager&quot;, quietly = TRUE))
+if (!requireNamespace(&quot;BiocManager&quot;, quietly = TRUE)) {
   install.packages(&quot;BiocManager&quot;)
-BiocManager::install(&quot;dada2&quot;)</code></pre>
+}
+
+BiocManager::install(&quot;dada2&quot;)
+BiocManager::install(&quot;phangorn&quot;)
+BiocManager::install(&quot;phyloseq&quot;)
+BiocManager::install(&quot;DECIPHER&quot;)
+
+install.packages(&quot;ggplot2&quot;)</code></pre>
 </div>
 <div id="bringing-your-own-data" class="section level2">
 <h2>Bringing Your Own Data</h2>
@@ -387,7 +395,9 @@ BiocManager::install(&quot;dada2&quot;)</code></pre>
 analyzing during the tutorial. However, if you would like to analyze
 your own data, you are more than welcome to bring some! If you choose to
 go this route, please be aware that your data will need to satisfy
-certain crteria.</p>
+certain criteria.</p>
+<div id="check-for-quality-information" class="section level3">
+<h3>Check for Quality Information</h3>
 <p>First, you will need FASTQ-formatted data, which means raw sequence
 data with quality information. If you look at your files in a text
 editor (like TextEdit, Notepad++, vim, Sublime, etc), they may look
@@ -403,15 +413,22 @@ NGACTACTGGGGTTTCTAATCCTGTTCGCTACCCACGCTTTCGAGCCTCAGCGTCAGTTACAAGCCAGAGAGCCGCTTTC
 <p>We will cover what all of these letters mean when you join us, but to
 simply confirm that you have “FASTQ” data, you want to look for the plus
 signs every few lines.</p>
+</div>
+<div id="ensure-files-are-demultiplexed" class="section level3">
+<h3>Ensure files are “demultiplexed”</h3>
 <p>Second, these files need to be separated by sample (“demultiplexed”),
 so if you are analyzing 20 samples, you’ll need to have 40 files. This
-should be the default for most FASTQ-generating softwares now, but it’s
+should be the default for most FASTQ-generating software now, but it’s
 always good to check.</p>
 <p>This also brings up another point – we will be focusing on paired-end
 data where there are forward and reverse reads that we need to merge
 together. You are welcome to bring single-end data, and I will do my
 best to point out the modifications that are needed to analyze the
 data.</p>
+</div>
+<div id="get-to-know-the-datas-sequencing-strategy" class="section level3">
+<h3>Get to know the data’s sequencing strategy</h3>
+<p>If you’re using amplicon data sequenced.</p>
 <p>The sequence data also needs to be without non-biological sequences,
 including primers and adapters. You can check for the presence of these
 with a tool called <a href="https://www.bioinformatics.babraham.ac.uk/projects/fastqc/">FASTQC</a>,
@@ -420,14 +437,15 @@ or <a href="https://cutadapt.readthedocs.io/en/stable/">cutadapt</a>.
 Alternatively, you can submit your data to <a href="https://nephele.niaid.nih.gov">Nephele</a> under the “Pre-process”
 tab, which uses several of these tools without the need for the command
 line<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a>.
-For now, there is no need to worry about quality trimming, and please do
-not merge paired-end reads – we’ll do both with DADA2. If you run into
-any issues, feel free to e-mail <a href="mailto:nephelesupport@nih.gov" class="email">nephelesupport@nih.gov</a>.</p>
+For now, there is no need to worry about quality trimming/filtering, and
+please do not merge paired-end reads – we’ll do both with DADA2. If you
+run into any issues using Nephele’s tool, feel free to contact me (<a href="mailto:kathryn.mccauley@nih.gov" class="email">kathryn.mccauley@nih.gov</a>).</p>
 <p>Finally, if you have a large dataset, consider only working on ~5-10
 samples during the workshop. The methods we use should be flexible
 enough that you can apply the concepts to more samples after the
 workshop, and we’re always available for questions! (<a href="mailto:bioinformatics@niaid.nih.gov" class="email">bioinformatics@niaid.nih.gov</a>)</p>
 <p>Looking forward to having you!</p>
+</div>
 </div>
 <div id="resources" class="section level2">
 <h2>Resources</h2>

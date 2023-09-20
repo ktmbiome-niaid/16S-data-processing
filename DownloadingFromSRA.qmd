@@ -1,0 +1,47 @@
+---
+title: "Downloading from SRA"
+format: html
+editor: visual
+---
+
+For our purposes today, I have already downloaded the samples that we will be working with. However, if you would like to reproduce my steps, you can do so following the directions below.
+
+Let's say we want to download from `PRJEB42394`.
+
+1.  Go to <https://www.ncbi.nlm.nih.gov/sra/>
+
+2.  In the search box, type your accession number (`PRJEB42394`). This returns a list of the samples associated with that number.
+
+3.  In the upper-right corner, click on `Send to:` then make sure the `File` radio button is highlighted, then in the "Format" drop-down select `Accession List`. Click `Create File`. This will download a csv file to your preferred location containing the accession numbers needed for later This should look similar to `SraAccList.csv` in our materials today, though the list is abbreviated to only 18 samples.
+
+4.  Install or load SRA tool kit. I typically set this up on an HPC and have a batch script that I submit to perform the download. If you're on an HPC, create a TXT file and copy in the full accession list.
+
+    An example batch script run on Biowulf:
+
+    ``` bash
+    module load sratoolkit
+    file_dir="/my/data/dir"
+    #ensure that this directory includes the accession list
+    cd $file_dir
+    mkdir -p $file_dir/SRA_file_output/
+
+    cat full_accession_list.txt > $file_dir/SRA_file_output/biosample_list
+
+    cd $file_dir/SRA_file_output/
+
+    mkdir -p raw_files
+
+    while read ii; do
+      fasterq-dump -t /lscratch/$SLURM_JOBID $ii -O $file_dir/SRA_file_output/
+      mv *_*.fastq raw_files/
+      rm *.fastq ## removes unmated reads
+    done < biosample_list
+
+    ls raw_files/*.fastq | parallel -j $SLURM_CPUS_PER_TASK "gzip {}"
+
+    # OR
+
+    gzip raw_files/*.fastq
+    ```
+
+5.  This will pull forward and reverse fastq files based on the list of accession numbers provided and then compress them into `fastq.gz` format. Here, I'm downloading all samples in my accession list, but `cat` can be replaced with `head -n 10` to download the first 10 samples in the list or something similar.

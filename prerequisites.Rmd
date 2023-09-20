@@ -7,9 +7,9 @@ output: html_document
 
 We're excited you're joining us for the upcoming 16S rRNA data processing training! This document is intended to help set up your computer and gather data before joining the workshop.
 
-Workshop Details:
-Date:
-Location:
+**Workshop Details:**
+
+Date: October 4th, 2023 (2-5pm ET)
 
 ## Computer Setup
 
@@ -19,7 +19,7 @@ In addition to installing the software we'll use, please also install a few pack
 
 ```{r, comment=NA}
 setwd("~/Documents/training/16S-data-processing/")
-cat(readLines("install.R"), sep="\n")
+cat(readLines("install.R", warn=FALSE), sep="\n")
 ```
 
 ## Bringing Your Own Data
@@ -53,7 +53,7 @@ This also brings up another point -- we will be focusing on paired-end data wher
 
 If you're using amplicon data sequenced.
 
-The sequence data also needs to be without non-biological sequences, including primers and adapters. You can check for the presence of these with a tool called [FASTQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/), and remove them with tools like [fastp](https://github.com/OpenGene/fastp), [trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic), or [cutadapt](https://cutadapt.readthedocs.io/en/stable/). Alternatively, you can submit your data to [Nephele](https://nephele.niaid.nih.gov) under the "Pre-process" tab, which uses several of these tools without the need for the command line^[https://nephele.niaid.nih.gov/details_qc/]. For now, there is no need to worry about quality trimming, and please do not merge paired-end reads -- we'll do both with DADA2. If you run into any issues, feel free to e-mail nephelesupport@nih.gov.
+The sequence data also needs to be without non-biological sequences, including primers and adapters. You can check for the presence of these with a tool called [FASTQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/), and remove them with tools like [fastp](https://github.com/OpenGene/fastp), [trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic), or [cutadapt](https://cutadapt.readthedocs.io/en/stable/). Alternatively, you can submit your data to [Nephele](https://nephele.niaid.nih.gov) under the "Pre-process" tab, which uses several of these tools without the need for the command line^[https://nephele.niaid.nih.gov/details_qc/]. For now, there is no need to worry about quality trimming/filtering, and please do not merge paired-end reads -- we'll do both with DADA2. If you run into any issues using Nephele's tool, feel free to contact me (kathryn.mccauley@nih.gov).
 
 Finally, if you have a large dataset, consider only working on ~5-10 samples during the workshop. The methods we use should be flexible enough that you can apply the concepts to more samples after the workshop, and we're always available for questions! (bioinformatics@niaid.nih.gov)
 

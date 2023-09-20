@@ -14,87 +14,129 @@ editor: visual
 
 ## Introduction
 
-Thank you for joining us for this 16S rRNA microbiome data processing tutorial! Before we jump in, let's start by going over our learning objectives for the technical part.
+Thank you for joining us for this 16S rRNA microbiome data processing tutorial! Before we jump in, let's start by going over our learning objectives for the technical component.
 
--   Identify and Remove Primers and Adapters (if present)
+-   Identify Primers and/or Adapters
 
--   Check the Quality of Your Microbiome Data
+-   Check the Quality of Microbiome Data
 
--   Develop Amplicon Sequence Variants (ASVs) using Divisive Amplicon Denoising Algorithm (DADA2)
+-   Develop Amplicon Sequence Variants (ASVs) using the Divisive Amplicon Denoising Algorithm 2 (DADA2)
 
--   Assign taxonomy to the species level
+-   Assign Taxonomy
 
--   Make a phylogenetic tree
+-   Check for Chimeras
 
--   Collate this data in a `phyloseq` object for later analysis
+-   Make a Phylogenetic Tree
 
-This tutorial is designed to introduce you to the nuts and bolts of turning sequencing data into analyzable counts with emphasis on. You may find that after you finish this tutorial, you start processing your data through other pipelines like Nephele[^1], but hopefully some of the concepts we cover today will guide how you approach and explore your data.
+-   Collate Data in a `phyloseq` Object
 
-[^1]: Disclaimer: The tools, functions and options that we will use today are not precisely the ones used by Nephele
+This tutorial is designed to introduce you to the steps involved in generating data from DADA2. While you may never actually create an ASV table using R code again (perhaps preferring Nephele's code-free DADA2 pipeline), we will hopefully introduce you to the steps involved and points to watch out for or consider when choosing parameters or evaluating your results.
+
+## A Primer on Sequencing
+
+[A short video from Illumina on "Sequencing by Synthesis"](https://www.youtube.com/watch?v=fCd6B5HRaZ8)
+
+[![Indexed Sequencing Overview](index_orientation.webp)](https://knowledge.illumina.com/library-preparation/general/library-preparation-general-reference_material-list/000002099)
+
+When the data is pulled from the sequencer, it typically arrives in BCL format, which is a highly compressed and proprietary Illumina format from which we need to create human- and computer-readable files (FASTQ). This software will frequently provide you with individual forward and reverse sequence files for each sample (provided to Basespace as a "Sample Sheet" prior to sequencing), and this is the format that gets uploaded to public repositories like the Sequence Read Archive (SRA) or the European Nucleotide Archive (ENA).
+
+![](SequencingBySynthesis.png)
 
 ## Find and Organize our Data
 
-First things first: we need to organize our data! If you didn't bring your own data, you will find the files that we work with today under `raw_data`, and we will use this location throughout the tutorial today.
+Let's dive into some data! First things first: we need to organize it. If you didn't bring your own data, you will find the files that we work with today under `raw_data`, and we will use this location throughout the tutorial today. If you did bring your own data, figure out where they live and put that location here:
 
 ```{r}
-library(dada2)
-
-setwd("~/Documents/training/16S-data-processing/")
-read_indicator <- "_R1"
-all_fastqs <- list.files("raw_data", full.names = T)
-all_fastqs
-r1_fastqs <- all_fastqs[grepl(read_indicator, all_fastqs)]
-r2_fastqs <- all_fastqs[!grepl(read_indicator, all_fastqs)]
-r1_fastqs
-r2_fastqs
+#| label: data-loc
+data_location <- "~/Documents/training/16S-data-processing/raw_data/"
 ```
 
-## Identifying Primers and Adapters
+The data we're working with today comes from a small subset of publicly available samples (Accession `PRJEB42394`) analyzed in this paper[^1] and utilizes 16S rRNA V4 sequencing of nasal microbiome samples from children with asthma. Samples were sequenced on the NextSeq 500 using 2x150 cycles.
 
-For the purposes of our discussion, I'm going to use R to ask if there are any primers in our sequencing data. Our data was derived from a subset of samples sequenced in this manuscript (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6129204/). It uses the V4 region of the 16S rRNA gene, and uses 515F and 806R primers. You can get the primer sequences from the Earth Microbiome Project's website (https://earthmicrobiome.org/protocols-and-standards/16s/). You may need to obtain different sequences for your primer strategy, but the overall code to search for our (known) primers remains the same.
+[^1]: McCauley KE, Flynn K, Calatroni A, DiMassa V, LaMere B, Fadrosh DW, Lynch KV, Gill MA, Pongracic JA, Khurana Hershey GK, Kercsmar CM, Liu AH, Johnson CC, Kim H, Kattan M, O'Connor GT, Bacharier LB, Teach SJ, Gergen PJ, Wheatley LM, Togias A, LeBeau P, Presnell S, Boushey HA, Busse WW, Gern JE, Jackson DJ, Altman MC, Lynch SV; National Institute of Allergy and Infectious Diseases--sponsored Inner-City Asthma Consortium. Seasonal airway microbiome and transcriptome interactions promote childhood asthma exacerbations. J Allergy Clin Immunol. 2022 Jul;150(1):204-213. doi: 10.1016/j.jaci.2022.01.020. Epub 2022 Feb 8. PMID: 35149044.
+
+I have another markdown file with a tutorial for how I found and downloaded these files if you're interested (See `DownloadingFromSRA.html`). For now, I have selected a handful of samples from this study that we will use to create an ASV/OTU table with DADA2 and those files reside in the `raw_data` directory we linked to above.
 
 ```{r}
+#| label: data-org
+library(dada2)
+
+read_indicator <- "_1"
+all_fastqs <- list.files(data_location, full.names = T)
+all_fastqs[1:15]
+r1_fastqs <- all_fastqs[grepl(read_indicator, all_fastqs)]
+r2_fastqs <- all_fastqs[!grepl(read_indicator, all_fastqs)]
+r1_fastqs[1:10]
+r2_fastqs[1:10]
+```
+
+## Identifying Primers
+
+For the purposes of our discussion, I'm going to use R to ask if there are any primers in our sequencing data. This dataset examines the V4 region of the 16S rRNA gene, and uses 515F and 806R primers. You can get the primer sequences from the Earth Microbiome Project's website (https://earthmicrobiome.org/protocols-and-standards/16s/). You may need to obtain different sequences for your primer strategy, but the overall code to search for our (known) primers remains the same.
+
+The important thing to note about the code is that we're looking for this primer sequence at the very beginning of the sequence read. We might see this sequence in other parts of the read, but that doesn't necessarily indicate the presence of primers.
+
+```{r}
+#| eval: false
+#| message: false
+#| label: find-primers
+
 library(ShortRead)
 library(Biostrings)
+library(tidyverse)
 FWD <- "GTGCCAGCMGCCGCGGTAA"
 REV <- "GGACTACHVGGGTWTCTAAT"
 
 primerHits <- function(primer, fn) {
-  nhits <- vcountPattern(primer, sread(readFastq(fn)), fixed = FALSE)
+  nhits <- vcountPattern(primer, sread(readFastq(fn)) %>% subseq(start=1, end=length(primer)+1), fixed = FALSE)
   return(sum(nhits > 0))
 }
-sapply(FWD, primerHits, r1_fastqs)
-sapply(REV, primerHits, r2_fastqs)
+sapply(FWD, primerHits, r1_fastqs[1:10])
+sapply(REV, primerHits, r2_fastqs[1:10])
 nchar(FWD)
 nchar(REV)
 ```
 
-We indeed have primer sequences! For our purposes, we'll use DADA2's filterAndTrim function to help us remove them before analysis.
+We don't see any primer sequences at the start of our reads, so we can move forward!
 
 ## Quality Filtering and Trimming
 
-First, let's use the `dada2` package's ability to tell us a little bit more about the quality profile of our samples. You may have already seen this for your data if you used Nephele's QC pipeline, but this allows us to take a look at our data again before we apply filtering and trimming.
+Before we start filtering our data, let's use the `dada2` package's ability to tell us a little bit more about the quality profile of our samples. You may have already seen this for your data if you used Nephele's QC pipeline.
 
 ```{r}
-plotQualityProfile(r1_fastqs)
-plotQualityProfile(r2_fastqs)
+#| label: quality-plots
+#| warning: false
 
+plotQualityProfile(r1_fastqs[1:10])
+plotQualityProfile(r2_fastqs[1:10])
 ```
 
 Given this information, we will use the `filterAndTrim` function to clean our data. Before we start, we need somewhere for our filtered reads to go, so we will make those paths here. Keep in mind that I'm performing very simple string modification, but you may need to do something more complex for your data and samples.
 
 ```{r}
+#| label: filter-trim
 r1_filt <- gsub("raw_data", "filtered", r1_fastqs)
 r2_filt <- gsub("raw_data", "filtered", r2_fastqs)
 ## In my case, the filtered directory could exist before I make the document -- this `unlink` function just makes sure it's not there when I run filterAndTrim
 unlink("filtered/", recursive = T)
-out <- filterAndTrim(r1_fastqs, r1_filt, r2_fastqs, r2_filt, trimLeft=c(19,20), truncLen=c(200, 140), maxN=0, maxEE=2, truncQ=5, rm.phix = TRUE, compress=TRUE, multithread = F, verbose=T)
+out <- filterAndTrim(r1_fastqs, r1_filt, r2_fastqs, r2_filt, truncLen=0, maxN=0, maxEE=2, multithread = F, verbose=T, rm.lowcomplex = 4, rm.phix = T)
 out
 ```
 
+Throughout the tutorial, we will review and experiment with some of the options available during this filtering and trimming step.
+
 ## Denoise Reads
 
+To actually get to "sequence variants", the DADA2 method uses a combination of building an "error" model to determine transition probabilities that we plot below, followed by creating an "abundance p-value". This "p-value" functions under the null hypothesis that a sequence is too abundant to be explained by error alone. We don't end up seeing these p-values, but can delve into objects if we're ever curious.
+
+[![Schematic of the DADA Algorithm](dada_schematic.webp){fig-align="center"}](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-13-283)
+
+If you want to learn more about the method, you can read either the DADA\^\[Rosen MJ, Callahan BJ, Fisher DS, Holmes SP. Denoising PCR-amplified metagenome data. BMC Bioinformatics. 2012 Oct 31;13:283. doi: 10.1186/1471-2105-13-283. PMID: 23113967; PMCID: PMC3563472.\] or the DADA2 papers\^\[Callahan BJ, Wong J, Heiner C, Oh S, Theriot CM, Gulati AS, McGill SK, Dougherty MK. High-throughput amplicon sequencing of the full-length 16S rRNA gene with single-nucleotide resolution. Nucleic Acids Res. 2019 Oct 10;47(18):e103. doi: 10.1093/nar/gkz569. PMID: 31269198; PMCID: PMC6765137.\]
+
 ```{r}
+#| warning: false
+#| label: dada-step
+
 r1_err <- learnErrors(r1_filt, multithread=F, verbose=T)
 r2_err <- learnErrors(r2_filt, multithread=F, verbose=T)
 
@@ -107,39 +149,58 @@ r2_dada <- dada(r2_filt, r2_err)
 
 ## Merge Reads
 
+Now that we've corrected our reads based on this information, we can merge our forward and reverse reads. Here, we need to keep in mind our sequencing structure -- for the data that we want to work with today, we need to keep in mind that our region of interest is 253 bases, which we can cover with 153 bases on the forward read and 153 bases on the reverse read. Therefore, 306-253=53, suggesting we can't expect an overlap greater than \~53 bases and we need to keep that in mind. Here is a schematic that might help:
+
+![Read Merging Schematic](ReadMerging.png){fig-align="center"}
+
 ```{r}
-merged_reads <- mergePairs(r1_dada, r1_filt, r2_dada, r2_filt, verbose=TRUE, minOverlap = 25)
-head(merged_reads[[2]])
+#| label: merge-reads
+merged_reads <- mergePairs(r1_dada, r1_filt, r2_dada, r2_filt, verbose=TRUE, minOverlap = 20)
+head(merged_reads[[1]])
 ```
 
 ## Make Sequence Table
 
+And finally we can make the first draft of our table!
+
 ```{r}
+#| label: seq-table
 seq_table <- makeSequenceTable(merged_reads)
 dim(seq_table)
 ```
 
-From this information, we can see that there are three rows for each of the three samples and there are 3,628 columns for each of the sequence variants.
+From this information, we can see that there are `r nrow(seq_table)` rows for each of the `r length(merged_reads)` samples and there are columns for the `r ncol(seq_table)` sequence variants.
 
 We can use basic R functions to explore the dataset, much like we would any table of counts.
 
-Below is the distribution of the sequence lengths. Notice that most sequences are 253 bases long, which is how long the V4 region is. If you're unsure if you have primers, this can be a good point to sanity check.
+Below is the distribution of the sequence lengths for our data. Notice that a large majority of sequences are 253 bases long, which is how long the V4 region is.
 
 ```{r}
+#| label: base-lengths
 table(nchar(getSequences(seq_table)))
 ```
 
 ::: {.callout-tip appearance="simple"}
 ## Filter for sequence length!
 
-If you look at the table and find that you have sequences that are much larger or smaller than your target amplicon, you can remove through basic R commands like: `filt_seq_table <- seq_table[, nchar(getSequences(seq_table)) >= median(nchar(getSequences(seq_table))]`
+If you look at the table and find that you have sequences that are much larger or smaller than your target amplicon, you can remove through basic R commands like: `filt_seq_table <- seq_table[, nchar(getSequences(seq_table)) %in% 250:255]`
+
+These abnormal lengths can arise from non-specific priming and typically are not cause for concern, but rather can be safely filtered out at this point.
 :::
 
 ## Remove Chimeras
 
 ```{r}
+#| label: chimeras
 chimera_check <- removeBimeraDenovo(seq_table, verbose=T)
 dim(chimera_check)
+```
+
+While we lose about half our sequences due to chimeras, we can determine how many reads were retained through this quick one-liner:
+
+```{r}
+#| label: chimera-summary
+sum(chimera_check)/sum(seq_table)
 ```
 
 ::: callout-important
@@ -154,7 +215,7 @@ colnames(track) <- c("input","filtered","denoised_r1","denoised_r2","merged","no
 track
 ```
 
-As you can see, there was a slight loss of reads during chimera checking for these samples. For now, it isn't enough to go back and double-check our parameters, but if you find that you lose about half of our reads due to chimeras, you may need to revisit the chimera method. For instance, we actually used the "pooled" chimera checking method because we lost many more sequences with the "consensus" chimera checking method, but for other data, you may need to look further back.
+As you can see, there was a slight loss of reads during filtering and merging for these particular samples. For now, there isn't enough evidence that we need to double-check our workflow so far, but if the data ends up more problematic, this table might help target a step to focus on.
 :::
 
 ## Assign Taxonomy
@@ -162,19 +223,57 @@ As you can see, there was a slight loss of reads during chimera checking for the
 We now have `{r} ncol(chimera_check)` sequence variants and we want to determine what bacteria they are assigned to. In order to do this, we need to download specially-formatted databases (you can find several different databases [here](https://benjjneb.github.io/dada2/training.html), some of which are contributed by outside teams). For our purposes, we'll download the [SILVA database](https://zenodo.org/record/4587955)\^\[Quast C, Pruesse E, Yilmaz P, Gerken J, Schweer T, Yarza P, Peplies J, Glöckner FO (2013) The SILVA ribosomal RNA gene database project: improved data processing and web-based tools. Nucl. Acids Res. 41 (D1): D590-D596.\]. You'll need all three files and we'll install them to a folder called `databases` that is in our working directory.
 
 ```{r}
+#| label: taxonomy
 taxa <- assignTaxonomy(chimera_check, "databases/silva_nr99_v138.1_train_set.fa.gz", multithread=F, verbose=T, minBoot = 80)
 taxa_print <- taxa
 rownames(taxa_print) <- NULL
 head(taxa_print,10)
 ```
 
+For today, we will only assign taxonomy to the genus level. Taxonomy assignment to the species level occurs using a different step, but is considered fully valid for DADA2 sequences. The method attempts to identify the genus and species independently and then only assigns species if the genus calls match.
+
 ## Make Phylogenetic Tree
 
-Let's arrange our unique sequences into a phylogenetic tree so that we know how similar they are to each other. This tree can be used for statistical questions or visualizations later.
+Let's arrange our unique sequences into a phylogenetic tree so that we know how similar they are to each other. This tree can be used for statistical questions or visualizations later. As a disclaimer, there are a few additional steps needed to "optimize" the fit of the tree, but we won't do them here because it can take several minutes to an hour to complete.
 
 ```{r}
+#| label: phy-tree
 library(DECIPHER)
-aligned <- DECIPHER::AlignSeqs(DNAStringSet(getSequences(chimera_check)))
+library(phangorn)
+seqs <- as.character(getSequences(chimera_check))
+names(seqs) <- seqs
+alignment <- DECIPHER::AlignSeqs(DNAStringSet(seqs), anchor=NA)
+phang.align <- as.phyDat(as(alignment, "matrix"), type="DNA")
+dm <- dist.ml(phang.align)
+treeNJ <- NJ(dm)
+fit <- pml(treeNJ, data=phang.align)
 ```
 
 ## Generate a Phyloseq Object
+
+After all of this work, we now have the components we need to make an object that is compatible with the microbiome analysis package `phyloseq` and we'll make one of these objects here. I currently don't have sample data on--hand for these samples, so we will make some dummy data first.
+
+```{r}
+#| label: make-phyloseq
+library(phyloseq)
+
+dummy_sample_data <- data.frame(samples=rownames(chimera_check), treatment_group=sample(c("A","B"), size=18, replace=TRUE))
+rownames(dummy_sample_data) <- dummy_sample_data$samples
+
+phy_obj <- phyloseq(otu_table(chimera_check, taxa_are_rows=F), sample_data(dummy_sample_data), phy_tree(fit$tree), tax_table(taxa))
+phy_obj
+```
+
+With this new phyloseq object, we can do easy and exciting visualizations with the phyloseq package. For a simple visualization, we will create a bar plot.
+
+```{r}
+#| label: phyloseq-plots
+library(ggplot2)
+plot_bar(phy_obj, fill="Genus") + guides(fill="none")
+
+ord <- ordinate(phy_obj, method="PCoA", distance = "bray")
+plot_ordination(phy_obj, ord)
+
+ord <- ordinate(phy_obj, method="PCoA", distance = "wunifrac")
+plot_ordination(phy_obj, ord)
+```
