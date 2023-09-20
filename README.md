@@ -14,4 +14,4 @@ The course materials we will use are contained within the `training.html/.qmd` p
 
 Thanks for joining us!
 
-This training was developed by the Bioinformatics and Computational Biology Branch at NIH/NIAID.
+This training was developed by the Bioinformatics and Computational Biosciences Branch at NIH/NIAID.
