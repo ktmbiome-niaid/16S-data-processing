@@ -65,7 +65,7 @@ Let's dive into some data! First things first: we need to organize it. If you di
 
 ```{r}
 #| label: data-loc
-data_location <- "~/Documents/training/16S-data-processing/raw_data/"
+data_location <- "~/Documents/training/16S-data-processing/raw_files/"
 ```
 
 The data we're working with today comes from a small subset of publicly available samples (Accession `PRJEB42394`) analyzed here[^2] and utilizes 16S rRNA V4 sequencing of nasal microbiome samples from children with asthma. Samples were sequenced on the NextSeq 500.
@@ -134,8 +134,8 @@ Given this information, we will use the `filterAndTrim` function to clean our da
 
 ```{r}
 #| label: filter-trim
-r1_filt <- gsub("raw_data", "filtered", r1_fastqs)
-r2_filt <- gsub("raw_data", "filtered", r2_fastqs)
+r1_filt <- gsub("raw_files", "filtered", r1_fastqs)
+r2_filt <- gsub("raw_files", "filtered", r2_fastqs)
 ## In my case, the filtered directory could exist before I make the document -- this `unlink` function just makes sure it's not there when I run filterAndTrim
 unlink("filtered/", recursive = T)
 out <- filterAndTrim(r1_fastqs, r1_filt, r2_fastqs, r2_filt, truncLen=0, maxN=0, maxEE=2, multithread = F, verbose=T, rm.lowcomplex = 4, rm.phix = T)
