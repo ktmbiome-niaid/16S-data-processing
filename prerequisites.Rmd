@@ -15,7 +15,7 @@ Date: October 4th, 2023 (2-5pm ET)
 
 For now, we'll do most of the analysis on your personal computer in R and RStudio. You can download both without administrator privileges by visiting the NIH Self Service Portal.
 
-In addition to installing the software we'll use, please also install a few packages that we'll use during the workshop by copying and pasting the lines below into the "Console" (the panel in the lower left when you open a fresh installation of Rstudio -- it should have a carrot sign `>`). The script can also be found at `install.R`.
+In addition to installing R, please also install a few packages that we'll use during the workshop by copying and pasting the lines below into the "Console" (the panel in the lower left when you open a fresh installation of Rstudio -- it should have a carrot sign `>`). The script can also be found at `install.R`.
 
 ```{r, comment=NA}
 setwd("~/Documents/training/16S-data-processing/")

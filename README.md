@@ -6,9 +6,7 @@ Technical Training by Katie McCauley
 
 \-\--
 
-Working on setting up the space for eventual upload to GitHub and for the training.
-
-Training Date:
+Training Date: October 2nd, 2023 (2-5 PM ET)
 
 You can find prerequisites and materials to read before joining us by visiting [this](prerequisites.html) page (prerequisites.html).
 

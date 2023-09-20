@@ -30,17 +30,19 @@ Thank you for joining us for this 16S rRNA microbiome data processing tutorial! 
 
 -   Collate Data in a `phyloseq` Object
 
-This tutorial is designed to introduce you to the steps involved in generating data from DADA2. While you may never actually create an ASV table using R code again (perhaps preferring Nephele's code-free DADA2 pipeline), we will hopefully introduce you to the steps involved and points to watch out for or consider when choosing parameters or evaluating your results.
+This tutorial is designed to introduce you to the steps involved in generating data from DADA2. While you may never actually create an ASV table using R code again (perhaps preferring Nephele's code-free DADA2 pipeline[^1]), we will hopefully introduce you to the steps involved and points to watch out for or consider when choosing parameters or evaluating your results.
+
+[^1]: https://nephele.niaid.nih.gov/
 
 ## A Primer on Sequencing
 
 [A short video from Illumina on "Sequencing by Synthesis"](https://www.youtube.com/watch?v=fCd6B5HRaZ8)
 
-[![Indexed Sequencing Overview](index_orientation.webp)](https://knowledge.illumina.com/library-preparation/general/library-preparation-general-reference_material-list/000002099)
+[![Indexed Sequencing Overview](images/index_orientation.webp)](https://knowledge.illumina.com/library-preparation/general/library-preparation-general-reference_material-list/000002099)
 
-When the data is pulled from the sequencer, it typically arrives in BCL format, which is a highly compressed and proprietary Illumina format from which we need to create human- and computer-readable files (FASTQ). This software will frequently provide you with individual forward and reverse sequence files for each sample (provided to Basespace as a "Sample Sheet" prior to sequencing), and this is the format that gets uploaded to public repositories like the Sequence Read Archive (SRA) or the European Nucleotide Archive (ENA).
+When the data is pulled from the sequencer, it typically arrives in BCL format, which is a highly compressed and proprietary Illumina format from which we need to create human- and computer-readable files (FASTQ). Illumina now frequently provides individual forward and reverse sequence files for each sample (called "Demultiplexed"), and this is the format that gets uploaded to public repositories like the Sequence Read Archive (SRA) or the European Nucleotide Archive (ENA).
 
-![](SequencingBySynthesis.png)
+[![Library Multiplexing Overview](images/SequencingBySynthesis.png){fig-align="center"}](https://www.illumina.com/content/dam/illumina-marketing/documents/products/illumina_sequencing_introduction.pdf)
 
 ## Find and Organize our Data
 
@@ -51,9 +53,9 @@ Let's dive into some data! First things first: we need to organize it. If you di
 data_location <- "~/Documents/training/16S-data-processing/raw_data/"
 ```
 
-The data we're working with today comes from a small subset of publicly available samples (Accession `PRJEB42394`) analyzed in this paper[^1] and utilizes 16S rRNA V4 sequencing of nasal microbiome samples from children with asthma. Samples were sequenced on the NextSeq 500 using 2x150 cycles.
+The data we're working with today comes from a small subset of publicly available samples (Accession `PRJEB42394`) analyzed here[^2] and utilizes 16S rRNA V4 sequencing of nasal microbiome samples from children with asthma. Samples were sequenced on the NextSeq 500.
 
-[^1]: McCauley KE, Flynn K, Calatroni A, DiMassa V, LaMere B, Fadrosh DW, Lynch KV, Gill MA, Pongracic JA, Khurana Hershey GK, Kercsmar CM, Liu AH, Johnson CC, Kim H, Kattan M, O'Connor GT, Bacharier LB, Teach SJ, Gergen PJ, Wheatley LM, Togias A, LeBeau P, Presnell S, Boushey HA, Busse WW, Gern JE, Jackson DJ, Altman MC, Lynch SV; National Institute of Allergy and Infectious Diseases--sponsored Inner-City Asthma Consortium. Seasonal airway microbiome and transcriptome interactions promote childhood asthma exacerbations. J Allergy Clin Immunol. 2022 Jul;150(1):204-213. doi: 10.1016/j.jaci.2022.01.020. Epub 2022 Feb 8. PMID: 35149044.
+[^2]: McCauley KE, Flynn K, Calatroni A, DiMassa V, LaMere B, Fadrosh DW, Lynch KV, Gill MA, Pongracic JA, Khurana Hershey GK, Kercsmar CM, Liu AH, Johnson CC, Kim H, Kattan M, O'Connor GT, Bacharier LB, Teach SJ, Gergen PJ, Wheatley LM, Togias A, LeBeau P, Presnell S, Boushey HA, Busse WW, Gern JE, Jackson DJ, Altman MC, Lynch SV; National Institute of Allergy and Infectious Diseases--sponsored Inner-City Asthma Consortium. Seasonal airway microbiome and transcriptome interactions promote childhood asthma exacerbations. J Allergy Clin Immunol. 2022 Jul;150(1):204-213. doi: 10.1016/j.jaci.2022.01.020. Epub 2022 Feb 8. PMID: 35149044.
 
 I have another markdown file with a tutorial for how I found and downloaded these files if you're interested (See `DownloadingFromSRA.html`). For now, I have selected a handful of samples from this study that we will use to create an ASV/OTU table with DADA2 and those files reside in the `raw_data` directory we linked to above.
 
@@ -74,7 +76,7 @@ r2_fastqs[1:10]
 
 For the purposes of our discussion, I'm going to use R to ask if there are any primers in our sequencing data. This dataset examines the V4 region of the 16S rRNA gene, and uses 515F and 806R primers. You can get the primer sequences from the Earth Microbiome Project's website (https://earthmicrobiome.org/protocols-and-standards/16s/). You may need to obtain different sequences for your primer strategy, but the overall code to search for our (known) primers remains the same.
 
-The important thing to note about the code is that we're looking for this primer sequence at the very beginning of the sequence read. We might see this sequence in other parts of the read, but that doesn't necessarily indicate the presence of primers.
+The important thing to note about the code is that we're looking for primer sequences at the beginning of the sequence read.
 
 ```{r}
 #| eval: false
@@ -97,7 +99,9 @@ nchar(FWD)
 nchar(REV)
 ```
 
-We don't see any primer sequences at the start of our reads, so we can move forward!
+As for adapters, we usually find those at the end of the read because of "read-through". This is what happens when the length of the read is longer than the actual size of the region of interest. For instance, if you were sequencing the V4 region, which is 253bp, but you used a 600-cycle MiSeq (which produces 300 base forward and reverse read, you would read into the adapter.
+
+Since the sequencing methods used for these samples resulted in reads that are shorter than 253 bases, adapters aren't a concern here.
 
 ## Quality Filtering and Trimming
 
@@ -129,7 +133,7 @@ Throughout the tutorial, we will review and experiment with some of the options 
 
 To actually get to "sequence variants", the DADA2 method uses a combination of building an "error" model to determine transition probabilities that we plot below, followed by creating an "abundance p-value". This "p-value" functions under the null hypothesis that a sequence is too abundant to be explained by error alone. We don't end up seeing these p-values, but can delve into objects if we're ever curious.
 
-[![Schematic of the DADA Algorithm](dada_schematic.webp){fig-align="center"}](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-13-283)
+[![Schematic of the DADA Algorithm](images/dada_schematic.webp){fig-align="center"}](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-13-283)
 
 If you want to learn more about the method, you can read either the DADA\^\[Rosen MJ, Callahan BJ, Fisher DS, Holmes SP. Denoising PCR-amplified metagenome data. BMC Bioinformatics. 2012 Oct 31;13:283. doi: 10.1186/1471-2105-13-283. PMID: 23113967; PMCID: PMC3563472.\] or the DADA2 papers\^\[Callahan BJ, Wong J, Heiner C, Oh S, Theriot CM, Gulati AS, McGill SK, Dougherty MK. High-throughput amplicon sequencing of the full-length 16S rRNA gene with single-nucleotide resolution. Nucleic Acids Res. 2019 Oct 10;47(18):e103. doi: 10.1093/nar/gkz569. PMID: 31269198; PMCID: PMC6765137.\]
 
@@ -151,7 +155,7 @@ r2_dada <- dada(r2_filt, r2_err)
 
 Now that we've corrected our reads based on this information, we can merge our forward and reverse reads. Here, we need to keep in mind our sequencing structure -- for the data that we want to work with today, we need to keep in mind that our region of interest is 253 bases, which we can cover with 153 bases on the forward read and 153 bases on the reverse read. Therefore, 306-253=53, suggesting we can't expect an overlap greater than \~53 bases and we need to keep that in mind. Here is a schematic that might help:
 
-![Read Merging Schematic](ReadMerging.png){fig-align="center"}
+![Read Merging Schematic](images/ReadMerging.png){fig-align="center"}
 
 ```{r}
 #| label: merge-reads
