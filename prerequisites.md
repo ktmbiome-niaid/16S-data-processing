@@ -70,18 +70,6 @@ We will cover what everything means when you join us, but to simply
 confirm that you have “FASTQ” data, you want to look for the plus signs
 every few lines.
 
-### Demultiplex The Data
-
-Second, these files need to be separated by sample (“demultiplexed”), so
-if you are analyzing 20 samples, you’ll need to have 40 files. This
-should be the default for most FASTQ-generating software now, but it’s
-always good to check.
-
-This also brings up another point – we will be focusing on paired-end
-data where there are forward and reverse reads that we need to merge
-together. You are welcome to bring single-end data, and I will do my
-best to point out the modifications that are needed to analyze the data.
-
 ### Know the Sequencing Strategy
 
 If you can, gather some information about the sequencing data which you
@@ -93,6 +81,21 @@ answers to the following questions:
 - Are the reads “paired-end”?
 
 - How long is the region of interest?
+
+### Demultiplex The Data
+
+Second, these files need to be separated by sample (“demultiplexed”).
+This should be the default for most FASTQ-generating software now, but
+it’s always good to check. To confirm, you should either have one or two
+files per sample. If you have two files per sample, this is typically
+“paired-end” which means that the forward reads are separate from the
+reverse reads, and this is typically noted by a “\_1”/“\_2” or
+“\_R1”/“\_R2” somewhere in the file name.
+
+This also brings up another point – we will be focusing on paired-end
+data where there are forward and reverse reads that we need to merge
+together. You are welcome to bring single-end data, and I will do my
+best to point out the modifications that are needed to analyze the data.
 
 ### Consider a Subset
 
