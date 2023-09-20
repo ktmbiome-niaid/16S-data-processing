@@ -1,4 +1,4 @@
-# README.md
+# 16S rRNA Microbiome Analysis: Sequence Data Processing
 
 Introduction by Lauren Krausfeldt
 
