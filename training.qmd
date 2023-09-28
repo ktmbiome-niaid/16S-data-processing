@@ -1,6 +1,6 @@
 ---
 title: "16S Data Processing Training"
-author: Katie McCauley from the Bioinformatics and Computational Biology Branch (BCBB)
+author: Katie McCauley from the Bioinformatics and Computational Biosciences Branch (BCBB)
 format: 
   html:
     toc: true
@@ -9,11 +9,8 @@ format:
     embed-resources: true
     code-overflow: wrap
     theme: yeti
-    column: page-right
 editor: visual
 ---
-
-## Introduction
 
 Thank you for joining us for this 16S rRNA microbiome data processing tutorial! Before we jump in, let's start by going over our learning objectives for the technical component.
 
@@ -35,6 +32,22 @@ This tutorial is designed to introduce you to the steps involved in generating d
 
 [^1]: https://nephele.niaid.nih.gov/
 
+## Quick Note about ASVs vs OTUs
+
+What we'll cover today are considered **Amplicon Sequence Variants** or **Sequence Variants** because they have the ability to differ by as little as one nucleotide (we'll cover how this happens later). Before DADA2 was widely accepted, though, the field primarily used **Operational Taxonomic Units** or **OTUs**. This was based on clustering sequences with 97% similarity. Meaning:
+
+-   Take your most frequent sequence and consider it the first "seed"
+
+-   Take your next most-frequent sequence and determine how similar it is to the first sequence. If it's 97% similar, consider it the "same" as the first sequence and if it's less than that, consider it a new "seed"
+
+-   Repeat for all dereplicated sequences, checking against all other "seed" sequences
+
+The 97% cutoff was chosen because it was presumed to account for potential PCR error in the sequence data, but often was fairly greedy. The figure below from Benjamin Callahan's supplemental material for the DADA2 paper[^2] help describe this comparison:
+
+[^2]: Callahan, B., McMurdie, P., Rosen, M. *et al.* DADA2: High-resolution sample inference from Illumina amplicon data. *Nat Methods* **13**, 581--583 (2016). https://doi.org/10.1038/nmeth.3869
+
+[![Comparing OTUs to ASVs](images/OTUs_vs_ASVs.png)](https://www.nature.com/articles/nmeth.3869)
+
 ## A Primer on Sequencing
 
 [A short video from Illumina on "Sequencing by Synthesis"](https://www.youtube.com/watch?v=fCd6B5HRaZ8)
@@ -47,7 +60,7 @@ When the data is pulled from the sequencer, it typically arrives in BCL format, 
 
 This is what a "FASTQ" file ends up looking like:
 
-````
+```         
 @M03213:59:000000000-AWR6D:1:1101:12406:1145 2:N:0:NCCTGAGC+NTATTAAG
 NGACTACTGGGGTTTCTAATCCTGTTTGCTCCCCACGCTTTCGCACATGAGCGTCAGTACATTCCCAAGNGGCTGCCTTCGCCTTCGGTATTCCTCCACATCTCTACGCNTTTCACCGCTACACGTGGAATTCTACCCCTCCCTAAAGTACTCTAGATTCCCAGTCTGAAATGCAATTCCCAGGTTAAGCCCGGGGCTTTCACACCTCACTTAAAAATCCGCCTGCGTGCCCTTTACGCCCAGTTATTCCGATTAACGCT
 +
@@ -56,20 +69,20 @@ NGACTACTGGGGTTTCTAATCCTGTTTGCTCCCCACGCTTTCGCACATGAGCGTCAGTACATTCCCAAGNGGCTGCCTTC
 NGACTACTGGGGTTTCTAATCCTGTTCGCTACCCACGCTTTCGAGCCTCAGCGTCAGTTACAAGCCAGAGAGCCGCTTTCGCCACAGGTGTTCCTCCATATATCTACGCATTTCACCGCTACACATGGAATTCCACTCTCCCCTCTTGCACTCAAGTTAAACAGTTTCCAAAGCAAACTATGGTTGAGCCACAGCCTTTGACTTCAGACTTATCTAACCGCCTGCGCTCGCTTTCCGCCCACTAAATCCGTATAACTCTCG
 +
 #8ACCGGGGGGGFCGGGGGGGGGGGGFGGGGGGGGGGGGGGGGFGGGGFGFFGGGFGFGGGGGGG7CFGCFFGGGGBEGGGGGGGG?EGGGGGFGGGGGGGGFGGGGGGGE@DFAFGGGFGEGGGGGGGGGF<,@,DDFGGDGDG=EFGGGFF,=D?8DF,?EGGCFCF,DFFGGFCDGFGG8@E3<?FF8DG8BFDFEEFCBEFA7;@6;A@CGGC7915>8)702/8:4*4A+7=;((/(,/6<29(((*.//,,/)/(
-````
+```
 
 ## Find and Organize our Data
 
-Let's dive into some data! First things first: we need to organize it. If you didn't bring your own data, you will find the files that we work with today under `raw_files`, and we will use this location throughout the tutorial today. If you did bring your own data, figure out where they live and put that location here:
+Let's dive into some data and generate some ASVs! First things first: we need to organize our sequencing data. If you didn't bring your own data, you will find the files that we work with today under `raw_files`, and we will use this location throughout the tutorial today. If you did bring your own data, figure out where they live and put that location here:
 
 ```{r}
 #| label: data-loc
 data_location <- "~/Documents/training/16S-data-processing/raw_files/"
 ```
 
-The data we're working with today comes from a small subset of publicly available samples (Accession `PRJEB42394`) analyzed here[^2] and utilizes 16S rRNA V4 sequencing of nasal microbiome samples from children with asthma. Samples were sequenced on the NextSeq 500.
+The data we're working with today comes from a small subset of publicly available samples (Accession `PRJEB42394`) analyzed here[^3] and utilizes 16S rRNA V4 sequencing of nasal microbiome samples from children with asthma. Samples were sequenced on the NextSeq 500.
 
-[^2]: McCauley KE, Flynn K, Calatroni A, DiMassa V, LaMere B, Fadrosh DW, Lynch KV, Gill MA, Pongracic JA, Khurana Hershey GK, Kercsmar CM, Liu AH, Johnson CC, Kim H, Kattan M, O'Connor GT, Bacharier LB, Teach SJ, Gergen PJ, Wheatley LM, Togias A, LeBeau P, Presnell S, Boushey HA, Busse WW, Gern JE, Jackson DJ, Altman MC, Lynch SV; National Institute of Allergy and Infectious Diseases--sponsored Inner-City Asthma Consortium. Seasonal airway microbiome and transcriptome interactions promote childhood asthma exacerbations. J Allergy Clin Immunol. 2022 Jul;150(1):204-213. doi: 10.1016/j.jaci.2022.01.020. Epub 2022 Feb 8. PMID: 35149044.
+[^3]: McCauley KE, Flynn K, Calatroni A, DiMassa V, LaMere B, Fadrosh DW, Lynch KV, Gill MA, Pongracic JA, Khurana Hershey GK, Kercsmar CM, Liu AH, Johnson CC, Kim H, Kattan M, O'Connor GT, Bacharier LB, Teach SJ, Gergen PJ, Wheatley LM, Togias A, LeBeau P, Presnell S, Boushey HA, Busse WW, Gern JE, Jackson DJ, Altman MC, Lynch SV; National Institute of Allergy and Infectious Diseases--sponsored Inner-City Asthma Consortium. Seasonal airway microbiome and transcriptome interactions promote childhood asthma exacerbations. J Allergy Clin Immunol. 2022 Jul;150(1):204-213. doi: 10.1016/j.jaci.2022.01.020. Epub 2022 Feb 8. PMID: 35149044.
 
 I have another markdown file with a tutorial for how I found and downloaded these files if you're interested (See `DownloadingFromSRA.html`). For now, I have selected a handful of samples from this study that we will use to create an ASV/OTU table with DADA2 and those files reside in the `raw_files` directory we linked to above.
 
@@ -99,18 +112,18 @@ The important thing to note about the code is that we're looking for primer sequ
 
 library(ShortRead)
 library(Biostrings)
-library(tidyverse)
 FWD <- "GTGCCAGCMGCCGCGGTAA"
 REV <- "GGACTACHVGGGTWTCTAAT"
 
 primerHits <- function(primer, fn) {
-  nhits <- vcountPattern(primer, sread(readFastq(fn)) %>% subseq(start=1, end=length(primer)+1), fixed = FALSE)
+  start_seq <- sread(readFastq(fn))
+  start_seq <- subseq(start_seq, start=1, end=length(primer)+1)
+  nhits <- vcountPattern(primer, start_seq, fixed = FALSE)
   return(sum(nhits > 0))
 }
 sapply(FWD, primerHits, r1_fastqs[1:10])
 sapply(REV, primerHits, r2_fastqs[1:10])
-nchar(FWD)
-nchar(REV)
+
 ```
 
 As for adapters, we usually find those at the end of the read because of "read-through". This is what happens when the length of the read is longer than the actual size of the region of interest. For instance, if you were sequencing the V4 region, which is 253bp, but you used a 600-cycle MiSeq (which produces 300 base forward and reverse read, you would read into the adapter.
@@ -149,7 +162,11 @@ To actually get to "sequence variants", the DADA2 method uses a combination of b
 
 [![Schematic of the DADA Algorithm](images/dada_schematic.webp){fig-align="center"}](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-13-283)
 
-If you want to learn more about the method, you can read either the DADA^[Rosen MJ, Callahan BJ, Fisher DS, Holmes SP. Denoising PCR-amplified metagenome data. BMC Bioinformatics. 2012 Oct 31;13:283. doi: 10.1186/1471-2105-13-283. PMID: 23113967; PMCID: PMC3563472.] or the DADA2 papers^[Callahan BJ, Wong J, Heiner C, Oh S, Theriot CM, Gulati AS, McGill SK, Dougherty MK. High-throughput amplicon sequencing of the full-length 16S rRNA gene with single-nucleotide resolution. Nucleic Acids Res. 2019 Oct 10;47(18):e103. doi: 10.1093/nar/gkz569. PMID: 31269198; PMCID: PMC6765137.]
+If you want to learn more about the method, you can read either the DADA[^4] or the DADA2 papers[^5]
+
+[^4]: Rosen MJ, Callahan BJ, Fisher DS, Holmes SP. Denoising PCR-amplified metagenome data. BMC Bioinformatics. 2012 Oct 31;13:283. doi: 10.1186/1471-2105-13-283. PMID: 23113967; PMCID: PMC3563472.
+
+[^5]: Callahan BJ, Wong J, Heiner C, Oh S, Theriot CM, Gulati AS, McGill SK, Dougherty MK. High-throughput amplicon sequencing of the full-length 16S rRNA gene with single-nucleotide resolution. Nucleic Acids Res. 2019 Oct 10;47(18):e103. doi: 10.1093/nar/gkz569. PMID: 31269198; PMCID: PMC6765137.
 
 ```{r}
 #| warning: false
@@ -167,7 +184,7 @@ r2_dada <- dada(r2_filt, r2_err)
 
 ## Merge Reads
 
-Now that we've corrected our reads based on this information, we can merge our forward and reverse reads. Here, we need to keep in mind our sequencing structure -- for the data that we want to work with today, we need to keep in mind that our region of interest is 253 bases, which we can cover with 153 bases on the forward read and 153 bases on the reverse read. Therefore, 306-253=53, suggesting we can't expect an overlap greater than ~53 bases and we need to keep that in mind. Here is a schematic that might help:
+Now that we've corrected our reads based on this information, we can merge our forward and reverse reads. Here, we need to keep in mind our sequencing structure -- for the data that we want to work with today, we need to keep in mind that our region of interest is 253 bases, which we can cover with 153 bases on the forward read and 153 bases on the reverse read. Therefore, 306-253=53, suggesting we can't expect an overlap greater than \~53 bases and we need to keep that in mind. Here is a schematic that might help:
 
 ![Read Merging Schematic](images/ReadMerging.png){fig-align="center"}
 
@@ -208,6 +225,8 @@ These abnormal lengths can arise from non-specific priming and typically are not
 
 ## Remove Chimeras
 
+Chimeras are hybrids of two "parent" sequences, meaning that you have one bacterial sequence belonging to, say, *E. coli*, on one side of the read and another bacterial sequence belonging to *Streptococcus* on the other. These are typically due to the PCR process, and are considered artifacts that should be filtered out. We do that with the `removeBimeraDenovo` function, which checks lower abundance sequence variants against higher abundance sequence variants to determine if any match to two separate "parents".
+
 ```{r}
 #| label: chimeras
 chimera_check <- removeBimeraDenovo(seq_table, verbose=T)
@@ -238,9 +257,9 @@ As you can see, there was a slight loss of reads during filtering and merging fo
 
 ## Assign Taxonomy
 
-We now have `r ncol(chimera_check)` sequence variants and we want to determine what bacteria they are assigned to. In order to do this, we need to download specially-formatted databases (you can find several different databases [here](https://benjjneb.github.io/dada2/training.html), some of which are contributed by outside teams). For our purposes, we'll download the [SILVA database](https://zenodo.org/record/4587955)[^3]. You'll need all three files and we'll install them to a folder called `databases` that is in our working directory.
+We now have `r ncol(chimera_check)` sequence variants and we want to determine what bacteria they are assigned to. In order to do this, we need to download specially-formatted databases (you can find several different databases [here](https://benjjneb.github.io/dada2/training.html), some of which are contributed by outside teams). For our purposes, we'll download the [SILVA database](https://zenodo.org/record/4587955)[^6]. You'll need all three files and we'll install them to a folder called `databases` that is in our working directory.
 
-[^3]: Quast C, Pruesse E, Yilmaz P, Gerken J, Schweer T, Yarza P, Peplies J, Glöckner FO (2013) The SILVA ribosomal RNA gene database project: improved data processing and web-based tools. Nucl. Acids Res. 41 (D1): D590-D596.
+[^6]: Quast C, Pruesse E, Yilmaz P, Gerken J, Schweer T, Yarza P, Peplies J, Glöckner FO (2013) The SILVA ribosomal RNA gene database project: improved data processing and web-based tools. Nucl. Acids Res. 41 (D1): D590-D596.
 
 ```{r}
 #| label: taxonomy
@@ -258,6 +277,7 @@ Let's arrange our unique sequences into a phylogenetic tree so that we know how 
 
 ```{r}
 #| label: phy-tree
+#| message: false
 library(DECIPHER)
 library(phangorn)
 seqs <- as.character(getSequences(chimera_check))

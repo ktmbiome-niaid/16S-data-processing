@@ -2,7 +2,7 @@ Prerequisites for 16S Data Processing Training
 ================
 Katie McCauley & Lauren Krausfeldt
 
-Date: 2023-09-20
+Date: 2023-09-28
 
 We’re excited you’re joining us for the upcoming 16S rRNA data
 processing training! This document is intended to help set up your
@@ -39,6 +39,8 @@ cat(readLines("install.R", warn=FALSE), sep="\n")
     BiocManager::install("phangorn")
     BiocManager::install("phyloseq")
     BiocManager::install("DECIPHER")
+    BiocManager::install("ShortRead")
+    BiocManager::install("Biostrings")
 
     install.packages("ggplot2")
 

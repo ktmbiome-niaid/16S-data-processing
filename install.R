@@ -8,5 +8,7 @@ BiocManager::install("dada2")
 BiocManager::install("phangorn")
 BiocManager::install("phyloseq")
 BiocManager::install("DECIPHER")
+BiocManager::install("ShortRead")
+BiocManager::install("Biostrings")
 
 install.packages("ggplot2")
