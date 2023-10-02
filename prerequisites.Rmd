@@ -11,7 +11,7 @@ We're excited you're joining us for the upcoming 16S rRNA data processing traini
 
 **Workshop Details:**
 
-Date: October 2nd, 2023 (2-5pm ET)
+Date: October 11th, 2023 (2-5pm ET)
 
 
 
@@ -21,10 +21,26 @@ We'll do the workshop activities on your personal computer using R and RStudio. 
 
 In addition to installing R, please also install a few packages that we'll use during the workshop by copying and pasting the lines below into the "Console" (the panel in the lower left when you open a fresh installation of Rstudio -- it should have a carrot sign `>`). The script can also be found at `install.R`.
 
-```{r, comment=NA}
+```{r, comment=NA, echo=FALSE}
 setwd("~/Documents/training/16S-data-processing/")
 cat(readLines("install.R", warn=FALSE), sep="\n")
 ```
+
+## Download Materials
+
+You might want to consider downloading the materials prior to the training (they're about 2.5 GB because I include the practice data). Both methods can be slow, so I suggest considering turning off the VPN if you're using one.
+
+### Using git clone
+
+To use the command line git (if you have it installed), you can do the following in your preferred directory.
+
+```
+git clone https://github.com/ktmbiome-niaid/16S-data-processing.git
+```
+
+### Downloading a Zip File
+
+You can also download a zip file of all materials by visiting the main repository page (https://github.com/ktmbiome-niaid/16S-data-processing/tree/main) and then clicking on the green button that says `<Code>`. At the bottom of the menu, there is a button called `Download Zip` which will begin downloading the zip file you can extract.
 
 ## Bringing Your Own Data
 
