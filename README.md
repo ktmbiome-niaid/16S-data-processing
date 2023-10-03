@@ -6,7 +6,7 @@ Technical Training by Katie McCauley
 
 \-\--
 
-Training Date: October 2nd, 2023 (2-5 PM ET)
+Training Date: October 11th, 2023 (2-5 PM ET)
 
 You can find prerequisites and materials to read before joining us by visiting [this](prerequisites.md) page (prerequisites.html).
 
