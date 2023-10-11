@@ -14,8 +14,8 @@ Date: October 11th, 2023 (2-5pm ET)
 
 ## Computer Setup
 
-We’ll do the workshop activities on your personal computer using R and
-RStudio. You can download both without administrator privileges by
+We’ll do the workshop activities on your local computer (in other words, not using a server or web tool) using R and
+RStudio. You can download both on your NIH computer without administrator privileges by
 visiting the NIH Self Service Portal.
 
 In addition to installing R, please also install a few packages that
