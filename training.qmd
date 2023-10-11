@@ -99,9 +99,9 @@ r1_fastqs[1:10]
 r2_fastqs[1:10]
 ```
 
-## Identifying Primers
+## Identifying Primers and Adapters
 
-For the purposes of our discussion, I'm going to use R to ask if there are any primers in our sequencing data. This dataset examines the V4 region of the 16S rRNA gene, and uses 515F and 806R primers. You can get the primer sequences from the Earth Microbiome Project's website (https://earthmicrobiome.org/protocols-and-standards/16s/). You may need to obtain different sequences for your primer strategy, but the overall code to search for our (known) primers remains the same.
+Primers and adapters are typically present in sequence data as artifacts of the sequencing process, and need to be removed before we start processing our data. For the purposes of our discussion, I'm going to use R to ask if there are any primers in our sequencing data. This dataset examines the V4 region of the 16S rRNA gene, and uses 515F and 806R primers. You can get the primer sequences from the Earth Microbiome Project's website (https://earthmicrobiome.org/protocols-and-standards/16s/). You may need to obtain different sequences for your primer strategy, but the overall code to search for our (known) primers remains the same.
 
 The important thing to note about the code is that we're looking for primer sequences at the beginning of the sequence read.
 
@@ -126,13 +126,19 @@ sapply(REV, primerHits, r2_fastqs[1:10])
 
 ```
 
-As for adapters, we usually find those at the end of the read because of "read-through". This is what happens when the length of the read is longer than the actual size of the region of interest. For instance, if you were sequencing the V4 region, which is 253bp, but you used a 600-cycle MiSeq (which produces 300 base forward and reverse read, you would read into the adapter.
+For adapters, you can search for them with tools like FASTQC[^4], which is used in Nephele's Pre-Process/Quality Check pipeline (https://nephele.niaid.nih.gov/details_qc/). This provides a good first-pass of data in the early stages and I'll walk through a demo.
 
-Since the sequencing methods used for these samples resulted in reads that are shorter than 253 bases, adapters aren't a concern here.
+[^4]: https://www.bioinformatics.babraham.ac.uk/projects/fastqc/
+
+Most often, adapters are found at the end of the read because of "read-through". This is what happens when the length of the read is longer than the actual size of the region of interest. For instance, if you were sequencing the V4 region, which is 253bp, but you used a 600-cycle MiSeq (which produces 300 base forward and reverse read, you would read into the adapter.
+
+However, you can also find adapters because of unpredictable sequencing artifacts, so it's always good to check for them.
+
+Since the sequencing methods used for these samples resulted in reads that are shorter than 253 bases and the FASTQC analysis didn't identify any adapters, we can move forward!
 
 ## Quality Filtering and Trimming
 
-Before we start filtering our data, let's use the `dada2` package's ability to tell us a little bit more about the quality profile of our samples. You may have already seen this for your data if you used Nephele's QC pipeline.
+Before we start filtering our data, let's use the `dada2` package's ability to tell us a little bit more about the quality profile of our samples, which can also be found in the FASTQC results.
 
 ```{r}
 #| label: quality-plots
@@ -162,11 +168,11 @@ To actually get to "sequence variants", the DADA2 method uses a combination of b
 
 [![Schematic of the DADA Algorithm](images/dada_schematic.webp){fig-align="center"}](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-13-283)
 
-If you want to learn more about the method, you can read either the DADA[^4] or the DADA2 papers[^5]
+If you want to learn more about the method, you can read either the DADA[^5] or the DADA2 papers[^6]
 
-[^4]: Rosen MJ, Callahan BJ, Fisher DS, Holmes SP. Denoising PCR-amplified metagenome data. BMC Bioinformatics. 2012 Oct 31;13:283. doi: 10.1186/1471-2105-13-283. PMID: 23113967; PMCID: PMC3563472.
+[^5]: Rosen MJ, Callahan BJ, Fisher DS, Holmes SP. Denoising PCR-amplified metagenome data. BMC Bioinformatics. 2012 Oct 31;13:283. doi: 10.1186/1471-2105-13-283. PMID: 23113967; PMCID: PMC3563472.
 
-[^5]: Callahan BJ, Wong J, Heiner C, Oh S, Theriot CM, Gulati AS, McGill SK, Dougherty MK. High-throughput amplicon sequencing of the full-length 16S rRNA gene with single-nucleotide resolution. Nucleic Acids Res. 2019 Oct 10;47(18):e103. doi: 10.1093/nar/gkz569. PMID: 31269198; PMCID: PMC6765137.
+[^6]: Callahan BJ, Wong J, Heiner C, Oh S, Theriot CM, Gulati AS, McGill SK, Dougherty MK. High-throughput amplicon sequencing of the full-length 16S rRNA gene with single-nucleotide resolution. Nucleic Acids Res. 2019 Oct 10;47(18):e103. doi: 10.1093/nar/gkz569. PMID: 31269198; PMCID: PMC6765137.
 
 ```{r}
 #| warning: false
@@ -257,9 +263,9 @@ As you can see, there was a slight loss of reads during filtering and merging fo
 
 ## Assign Taxonomy
 
-We now have `r ncol(chimera_check)` sequence variants and we want to determine what bacteria they are assigned to. In order to do this, we need to download specially-formatted databases (you can find several different databases [here](https://benjjneb.github.io/dada2/training.html), some of which are contributed by outside teams). For our purposes, we'll download the [SILVA database](https://zenodo.org/record/4587955)[^6]. You'll need all three files and we'll install them to a folder called `databases` that is in our working directory.
+We now have `r ncol(chimera_check)` sequence variants and we want to determine what bacteria they are assigned to. In order to do this, we need to download specially-formatted databases (you can find several different databases [here](https://benjjneb.github.io/dada2/training.html), some of which are contributed by outside teams). For our purposes, we'll download the [SILVA database](https://zenodo.org/record/4587955)[^7]. You'll need all three files and we'll install them to a folder called `databases` that is in our working directory.
 
-[^6]: Quast C, Pruesse E, Yilmaz P, Gerken J, Schweer T, Yarza P, Peplies J, Glöckner FO (2013) The SILVA ribosomal RNA gene database project: improved data processing and web-based tools. Nucl. Acids Res. 41 (D1): D590-D596.
+[^7]: Quast C, Pruesse E, Yilmaz P, Gerken J, Schweer T, Yarza P, Peplies J, Glöckner FO (2013) The SILVA ribosomal RNA gene database project: improved data processing and web-based tools. Nucl. Acids Res. 41 (D1): D590-D596.
 
 ```{r}
 #| label: taxonomy

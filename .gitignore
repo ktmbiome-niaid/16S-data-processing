@@ -6,4 +6,5 @@ slides*
 filtered*
 databases*
 DownloadingFromSRA_files*
-training*
+training_files/
+NepheleMapping.xlsx
