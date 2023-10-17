@@ -4,9 +4,11 @@ Introduction by Lauren Krausfeldt
 
 Technical Training by Katie McCauley
 
-\-\--
+---
 
 Training Date: October 11th, 2023 (2-5 PM ET)
+
+The slides from the introduction can be found under `16S Amplicon Sequnencing lecture intro.pdf` up above.
 
 You can find prerequisites and materials to read before joining us by visiting [this](prerequisites.md) page (prerequisites.html).
 
