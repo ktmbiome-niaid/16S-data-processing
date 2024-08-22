@@ -10,6 +10,8 @@ format:
     code-overflow: wrap
     theme: yeti
 editor: visual
+editor_options: 
+  chunk_output_type: console
 ---
 
 Thank you for joining us for this 16S rRNA microbiome data processing tutorial! Before we jump in, let's start by going over our learning objectives for the technical component.
@@ -77,7 +79,7 @@ Let's dive into some data and generate some ASVs! First things first: we need to
 
 ```{r}
 #| label: data-loc
-data_location <- "~/Documents/training/16S-data-processing/raw_files/"
+data_location <- "~/OneDrive/training/16S-data-processing/raw_files/"
 ```
 
 The data we're working with today comes from a small subset of publicly available samples (Accession `PRJEB42394`) analyzed here[^3] and utilizes 16S rRNA V4 sequencing of nasal microbiome samples from children with asthma. Samples were sequenced on the NextSeq 500.
@@ -103,7 +105,7 @@ r2_fastqs[1:10]
 
 Primers and adapters are typically present in sequence data as artifacts of the sequencing process, and need to be removed before we start processing our data. For the purposes of our discussion, I'm going to use R to ask if there are any primers in our sequencing data. This dataset examines the V4 region of the 16S rRNA gene, and uses 515F and 806R primers. You can get the primer sequences from the Earth Microbiome Project's website (https://earthmicrobiome.org/protocols-and-standards/16s/). You may need to obtain different sequences for your primer strategy, but the overall code to search for our (known) primers remains the same.
 
-The important thing to note about the code is that we're looking for primer sequences at the beginning of the sequence read.
+Note that **Primer sequences** are at the beginning of the sequence read.
 
 ```{r}
 #| eval: false
@@ -126,45 +128,71 @@ sapply(REV, primerHits, r2_fastqs[1:10])
 
 ```
 
-For adapters, you can search for them with tools like FASTQC[^4], which is used in Nephele's Pre-Process/Quality Check pipeline (https://nephele.niaid.nih.gov/details_qc/). This provides a good first-pass of data in the early stages and I'll walk through a demo.
+**Adapters**, however are typically at the end of the read. You can search for them with tools like FASTQC[^4], which is used in Nephele's Pre-Process/Quality Check pipeline (https://nephele.niaid.nih.gov/details_qc/). This provides a good first-pass of data in the early stages and I'll walk through a demo.
 
 [^4]: https://www.bioinformatics.babraham.ac.uk/projects/fastqc/
 
 Most often, adapters are found at the end of the read because of "read-through". This is what happens when the length of the read is longer than the actual size of the region of interest. For instance, if you were sequencing the V4 region, which is 253bp, but you used a 600-cycle MiSeq (which produces 300 base forward and reverse read, you would read into the adapter.
 
-However, you can also find adapters because of unpredictable sequencing artifacts, so it's always good to check for them.
-
 Since the sequencing methods used for these samples resulted in reads that are shorter than 253 bases and the FASTQC analysis didn't identify any adapters, we can move forward!
+
+::: callout-important
+# Quiz
+
+For the following scenarios, would you expect to find adapters? If so, what adapter removal strategies could work?
+
+1.  V4 region (253bp) on a 2x150 NextSeq run
+2.  V1-V3 region (\~480bp) on a 2x300 MiSeq run
+3.  V4 region (253bp) on a 2x300 MiSeq run
+4.  *BONUS* ITS2 (160-390bp) on a 2x300 MiSeq run
+:::
 
 ## Quality Filtering and Trimming
 
-Before we start filtering our data, let's use the `dada2` package's ability to tell us a little bit more about the quality profile of our samples, which can also be found in the FASTQC results.
+While DADA2 will physically correct the reads based on quality scores, it is helpful to have relatively high-quality data going in. This is a good time to review the [multiQC report](Training-Sample-QC_multiqc_report.html) to help us identify areas we may want to have impact on.
+
+::: callout-important
+# Quiz
+
+Review the QC report. Notice what MultiQC highlights as "good" or "bad". Do you agree?
+:::
+
+Before we start processing, we need somewhere for our filtered reads to go, so we do some housekeeping. Keep in mind that I'm performing very simple string modification, but you may need to do something more complex for your data and samples.
 
 ```{r}
-#| label: quality-plots
-#| warning: false
-
-plotQualityProfile(r1_fastqs[1:10])
-plotQualityProfile(r2_fastqs[1:10])
+#| label: prep-filter
+r1_filt <- gsub("raw_files", "filtered", r1_fastqs)
+r2_filt <- gsub("raw_files", "filtered", r2_fastqs)
+## In my case, the filtered directory could exist before I make the document
+## The `unlink` function just makes sure it's not there when I run filterAndTrim
+unlink("filtered/", recursive = T)
 ```
 
-Given this information, we will use the `filterAndTrim` function to clean our data. Before we start, we need somewhere for our filtered reads to go, so we will make those paths here. Keep in mind that I'm performing very simple string modification, but you may need to do something more complex for your data and samples.
+Given this information, we now use the `filterAndTrim` function to clean our data. There are several different terms you can use, and these can be reviewed with `?filterAndTrim`.
 
 ```{r}
 #| label: filter-trim
-r1_filt <- gsub("raw_files", "filtered", r1_fastqs)
-r2_filt <- gsub("raw_files", "filtered", r2_fastqs)
-## In my case, the filtered directory could exist before I make the document -- this `unlink` function just makes sure it's not there when I run filterAndTrim
-unlink("filtered/", recursive = T)
-out <- filterAndTrim(r1_fastqs, r1_filt, r2_fastqs, r2_filt, truncLen=0, maxN=0, maxEE=2, multithread = F, verbose=T, rm.lowcomplex = 4, rm.phix = T)
+out <- filterAndTrim(r1_fastqs, r1_filt, r2_fastqs, r2_filt, 
+                     maxN=0, maxEE=2, multithread = F,
+                     verbose=T, rm.lowcomplex = 8, rm.phix = T)
 out
 ```
 
-Throughout the tutorial, we will review and experiment with some of the options available during this filtering and trimming step.
+::: callout-important
+# Quiz
+
+Under the following scenarios, would you expect *more* or *fewer* reads to pass QC?
+
+1.  truncQ = 25, minLen = 125 (default: truncQ = 2, minLen=20)
+2.  maxEE = 5
+3.  truncLen = c(150,125) (default: truncLen = 0)
+
+If you have free time, feel free to test these parameters!
+:::
 
 ## Denoise Reads
 
-To actually get to "sequence variants", the DADA2 method uses a combination of building an "error" model to determine transition probabilities that we plot below, followed by creating an "abundance p-value". This "p-value" functions under the null hypothesis that a sequence is too abundant to be explained by error alone. We don't end up seeing these p-values, but can delve into objects if we're ever curious.
+To actually get to "sequence variants", the DADA2 method uses a combination of building an "error" model to determine transition probabilities and an "abundance p-value". This "p-value" functions under the null hypothesis that a sequence is too abundant to be explained by error alone. We don't end up seeing these p-values, but can delve into objects if we're ever curious.
 
 [![Schematic of the DADA Algorithm](images/dada_schematic.webp){fig-align="center"}](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-13-283)
 
@@ -174,23 +202,51 @@ If you want to learn more about the method, you can read either the DADA[^5] or 
 
 [^6]: Callahan BJ, Wong J, Heiner C, Oh S, Theriot CM, Gulati AS, McGill SK, Dougherty MK. High-throughput amplicon sequencing of the full-length 16S rRNA gene with single-nucleotide resolution. Nucleic Acids Res. 2019 Oct 10;47(18):e103. doi: 10.1093/nar/gkz569. PMID: 31269198; PMCID: PMC6765137.
 
+What we do first is train the algorithm on our current data so it knows how to apply error correction. Also, notice that only a portion of samples and sequences are used for training.
+
 ```{r}
 #| warning: false
-#| label: dada-step
+#| label: learn-errors
 
 r1_err <- learnErrors(r1_filt, multithread=F, verbose=T)
 r2_err <- learnErrors(r2_filt, multithread=F, verbose=T)
+```
+
+These plots tell us for each nucleotide transition(A2A, A2T, etc.), the average error frequency across quality scores. The observed values are the points, the red lines indicate expected values, and the final estimated error rates based on the model are the black lines.
+
+While somewhat messy, they are still trending in the correct direction. As long as the model (black line) fits the black points, and the trend is generally negative across all transitions, DADA2 should perform as expected.
+
+```{r}
+#| label: plot-errors
+#| warning: false
 
 plotErrors(r1_err, nominalQ = T)
 plotErrors(r2_err, nominalQ = T)
+```
+
+Now we apply these error rates to our filtered data and perform the DADA2 denoising!
+
+```{r}
+#| label: dada-run
+#| warning: false
 
 r1_dada <- dada(r1_filt, r1_err)
 r2_dada <- dada(r2_filt, r2_err)
 ```
 
+::: callout-tip
+## Pooling
+
+As you can see as you watched each sample go through the DADA2 process, each sample goes through divisive denoising by themselves. However, DADA2 also provides other options which allow for sharing of information between samples.
+
+If you choose `pool=TRUE`, all information from all samples is put together before determining the exact sequence variants in each sample. However this can be quite resource intensive (in my tests on this data, it took about 20 minutes for `pool=TRUE`).
+
+Thus, the authors created `pool="pseudo"`, or pseudo-pooling, which allows for information sharing between samples, but also allows for each sample to be processed individually. This reduces time and memory requirements compared to true pooling, while providing similar benefits. You can read more about this option [here](https://benjjneb.github.io/dada2/pseudo.html#pseudo-pooling).
+:::
+
 ## Merge Reads
 
-Now that we've corrected our reads based on this information, we can merge our forward and reverse reads. Here, we need to keep in mind our sequencing structure -- for the data that we want to work with today, we need to keep in mind that our region of interest is 253 bases, which we can cover with 153 bases on the forward read and 153 bases on the reverse read. Therefore, 306-253=53, suggesting we can't expect an overlap greater than \~53 bases and we need to keep that in mind. Here is a schematic that might help:
+Now that we've corrected our reads, we can merge our forward and reverse reads. Here, we need to recall our sequencing strategy again! Our region of interest is 253 bases, which we can cover with 153 bases from the forward read and 153 bases from the reverse read. Therefore, 306-253=53, suggesting we can't expect an overlap greater than \~53 bases. Here is a schematic that might help:
 
 ![Read Merging Schematic](images/ReadMerging.png){fig-align="center"}
 
@@ -199,6 +255,26 @@ Now that we've corrected our reads based on this information, we can merge our f
 merged_reads <- mergePairs(r1_dada, r1_filt, r2_dada, r2_filt, verbose=TRUE, minOverlap = 20)
 head(merged_reads[[1]])
 ```
+
+::: callout-important
+## Quiz
+
+Let's assume that you have a V1-V3 (\~480bp) sequencing strategy with a 2x300 MiSeq run. On these types of runs, quality tends to decrease quite precipitously once you get to the ends of these longer reads, so you decide to trim at 270 on the forward reads and 230 on the reverse read (`truncLen = c(270,230)`).
+
+What is the overlap length?
+:::
+
+::: callout-tip
+## Loss of reads at merged step
+
+Sometimes you might find that even though you've ensured sufficient overlap, there's still a large number of reads lost at the merging step. This can happen for several reasons.
+
+First, it can indicate that primers are indeed present in your data and may need trimming.
+
+It could indicate that a filtering/trimming step needs to be better-optimized for your data (see above).
+
+Losing some reads to merging is expected, but if you find you're losing 50% or more, it might be worth diving in a little deeper.
+:::
 
 ## Make Sequence Table
 
@@ -224,7 +300,7 @@ table(nchar(getSequences(seq_table)))
 ::: {.callout-tip appearance="simple"}
 ## Filter for sequence length!
 
-If you look at the table and find that you have sequences that are much larger or smaller than your target amplicon, you can remove through basic R commands like: `filt_seq_table <- seq_table[, nchar(getSequences(seq_table)) %in% 250:255]`
+If you look at the table and find that you have sequences that are much larger or smaller than your target amplicon, you can remove them through basic R commands like: `filt_seq_table <- seq_table[, nchar(getSequences(seq_table)) %in% 250:255]`
 
 These abnormal lengths can arise from non-specific priming and typically are not cause for concern.
 :::
@@ -263,7 +339,7 @@ As you can see, there was a slight loss of reads during filtering and merging fo
 
 ## Assign Taxonomy
 
-We now have `r ncol(chimera_check)` sequence variants and we want to determine what bacteria they are assigned to. In order to do this, we need to download specially-formatted databases (you can find several different databases [here](https://benjjneb.github.io/dada2/training.html), some of which are contributed by outside teams). For our purposes, we'll download the [SILVA database](https://zenodo.org/record/4587955)[^7]. You'll need all three files and we'll install them to a folder called `databases` that is in our working directory.
+We now have `r ncol(chimera_check)` sequence variants and we want to determine what bacteria they actually are. In order to do this, we need to download specially-formatted databases (you can find several different databases [here](https://benjjneb.github.io/dada2/training.html), some of which are contributed by outside teams). For our purposes, we'll download the [SILVA database](https://zenodo.org/record/4587955)[^7]. You'll need all three files and we'll install them to a folder called `databases` that is in our working directory.
 
 [^7]: Quast C, Pruesse E, Yilmaz P, Gerken J, Schweer T, Yarza P, Peplies J, Glöckner FO (2013) The SILVA ribosomal RNA gene database project: improved data processing and web-based tools. Nucl. Acids Res. 41 (D1): D590-D596.
 
@@ -275,11 +351,13 @@ rownames(taxa_print) <- NULL
 head(taxa_print,10)
 ```
 
-For today, we will only assign taxonomy to the genus level. Taxonomy assignment to the species level occurs using a separate function (`assignSpecies`), but is considered fully valid for DADA2 sequences. The method attempts to identify the genus and species independently and then only assigns species if the genus calls match.
+You'll notice a parameter called `minBoot`, which is the minimum bootstrapped probability that the call is accurate. The default is 50. **Play** with different values. What do you notice about the specificity of the classifications? You may need to adjust the number of rows of `taxa_print` that are shown to be able to see some of these effects.
+
+For today, we will only assign taxonomy to the genus level. Taxonomy assignment to the species level occurs using a separate function (`assignSpecies`), but is considered fully valid for DADA2 sequences. The method attempts to identify the genus and species independently and then only assigns species if the genus calls match. By default, `assignSpecies` will only do so if there is one unique species that reaches the criteria. However, there is also the option to list all species that match the sequence variant at 100% identity.
 
 ## Make Phylogenetic Tree
 
-Let's arrange our unique sequences into a phylogenetic tree so that we know how similar they are to each other. This tree can be used for statistical questions or visualizations later. As a disclaimer, there are a few additional steps needed to "optimize" the fit of the tree, but we won't do them here because it can a long time. If you would like to explore this method of tree building further, you can find additional documentation [here](https://f1000research.com/articles/5-1492).
+Next, we align the sequences to each other so that we can create a phylogenetic tree. This tree can be used for statistical questions or visualizations later. As a disclaimer, there are a few additional steps needed to "optimize" the fit of the tree, but we won't do them here because it can a long time. If you would like to explore this method of tree building further, you can find additional documentation [here](https://f1000research.com/articles/5-1492).
 
 ```{r}
 #| label: phy-tree
@@ -297,7 +375,7 @@ fit <- pml(treeNJ, data=phang.align)
 
 ## Generate a Phyloseq Object
 
-Now we have the components we need to make an object that is compatible with various microbiome packages. My personal preference is [phyloseq](https://joey711.github.io/phyloseq/), but there are other packages out there that do the same or similar things, including [ampvis2](https://kasperskytte.github.io/ampvis2/articles/ampvis2.html) and [SummarizedExperiment](https://github.com/Bioconductor/SummarizedExperiment). I currently don't have sample data on-hand for these samples, so we will make some dummy data first.
+Now we have the components we need to make an object that is compatible with various microbiome packages. These microbiome packages help bring the data to life and make both visualization and analysis much easier. My personal preference is [phyloseq](https://joey711.github.io/phyloseq/), but there are other packages out there that do the same or similar things, including [ampvis2](https://kasperskytte.github.io/ampvis2/articles/ampvis2.html) and [SummarizedExperiment](https://github.com/Bioconductor/SummarizedExperiment). I currently don't have sample data on-hand for these samples, so we will make some dummy data first.
 
 ```{r}
 #| label: make-phyloseq
@@ -305,12 +383,16 @@ library(phyloseq)
 
 dummy_sample_data <- data.frame(samples=rownames(chimera_check), treatment_group=sample(c("A","B"), size=20, replace=TRUE))
 rownames(dummy_sample_data) <- dummy_sample_data$samples
+```
 
+Now we import our components (OTU table, sample data, phylogenetic tree, and taxonomic table) into a single unified object:
+
+```{r}
 phy_obj <- phyloseq(otu_table(chimera_check, taxa_are_rows=F), sample_data(dummy_sample_data), phy_tree(fit$tree), tax_table(taxa))
 phy_obj
 ```
 
-With this new phyloseq object, we can do easy and exciting visualizations with the phyloseq package. For a simple visualization, we will create a bar plot and some PCoA plots.
+With this new phyloseq object, we can perform visualizations. For example, we will create a bar plot and some PCoA plots.
 
 ```{r}
 #| label: phyloseq-plots
@@ -323,3 +405,17 @@ plot_ordination(phy_obj, ord)
 ord <- ordinate(phy_obj, method="PCoA", distance = "wunifrac")
 plot_ordination(phy_obj, ord)
 ```
+
+## Nephele
+
+We can also process the data pretty much exactly the same way with Nephele. I have some jobs that I've already completed; feel free to review and experiment with them.
+
+QC: `a78aa49df492` (https://nephele.niaid.nih.gov/results_page/a78aa49df492) DADA2: `8ced4dead96a` (https://nephele.niaid.nih.gov/results_page/8ced4dead96a)
+
+If you want to re-run one of these jobs, visit the main Nephele page (nephele.niaid.nih.gov) and place the job IDs above into the "Need to re-run a Nephele job?" text box.
+
+As you review the results, you'll notice that some components are a bit different, but broadly the same techniques are applied.
+
+## Wrap-up
+
+Thank you for joining today! If you have feedback, ideas for additional sessions, questions about your own project, etc, feel free to reach out to me (kathryn.mccauley@nih.gov) or make a ticket to work with the Bioinformatics team (https://niaid-amp.powerappsportals.us/) and we would be happy to assist.
