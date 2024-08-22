@@ -6,6 +6,12 @@ Technical Training by Katie McCauley
 
 ---
 
+Jump right into analysis with our Binder environment!
+
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ktmbiome-niaid/16S-data-processing/HEAD?urlpath=rstudio)
+
+---
+
 Training Date: October 11th, 2023 (2-5 PM ET)
 
 The slides from the introduction can be found under `16S Amplicon Sequnencing lecture intro.pdf` up above.
