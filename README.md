@@ -6,7 +6,7 @@ Led by Katie McCauley
 
 Jump right into analysis with our Binder environment!
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ktmbiome-niaid/16S-data-processing/HEAD?urlpath=rstudio)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ktmbiome-niaid/base-binder-env/HEAD?urlpath=git-pull?repo=https://github.com/ktmbiome-niaid/16S-data-processing)
 
 ---
 
