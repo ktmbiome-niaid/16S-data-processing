@@ -1,8 +1,8 @@
 Prerequisites for 16S Data Processing Training
 ================
-Katie McCauley & Lauren Krausfeldt
+Katie McCauley
 
-Date: 2023-10-02
+Date: 2024-10-23
 
 We’re excited you’re joining us for the upcoming 16S rRNA data
 processing training! This document is intended to help set up your
@@ -10,7 +10,7 @@ computer and gather data before joining the workshop.
 
 **Workshop Details:**
 
-Date: October 11th, 2023 (2-5pm ET)
+Date: October 23rd, 2024 (2-5pm ET)
 
 ## Computer Setup
 
@@ -39,11 +39,17 @@ can also be found at `install.R`.
 
     install.packages("ggplot2")
 
+### Binder
+
+For this training, I would also like to try a tool called "Binder", which provides an analysis environment that has all of the packages that we need pre-installed. You can access it using the badge on the homepage README file, or by clicking the badge below. Both will take you to the same location.
+
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ktmbiome-niaid/base-binder-env/HEAD?urlpath=git-pull?repo=https://github.com/ktmbiome-niaid/16S-data-processing)
+
 ## Download Materials
 
 You might want to consider downloading the materials prior to the
 training (they’re about 2.5 GB because I include the practice data).
-Both methods can be slow, so I suggest considering turning off the VPN
+Both methods can be slow, so I suggest considering turning off the NIH VPN
 if you’re using one.
 
 ### Using git clone
@@ -66,9 +72,9 @@ downloading the zip file you can extract.
 
 We plan to provide you with data to use on your own computer for
 analyzing during the tutorial. However, if you would like to analyze
-your own data, you are more than welcome to bring some! If you choose to
-go this route, please be aware that your data will need to satisfy
-certain criteria.
+your own data, please bring some bring some! If you choose to
+go this route, be aware that your data will need to satisfy
+certain criteria:
 
 ### Confirm Quality Information
 
