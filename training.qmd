@@ -9,7 +9,7 @@ format:
     embed-resources: true
     code-overflow: wrap
     theme: yeti
-editor: visual
+editor: source
 editor_options: 
   chunk_output_type: console
 ---
@@ -187,7 +187,7 @@ Under the following scenarios, would you expect *more* or *fewer* reads to pass 
 2.  maxEE = 5
 3.  truncLen = c(150,125) (default: truncLen = 0)
 
-If you have free time, feel free to test these parameters!
+If you have time, feel free to test these parameters!
 :::
 
 ## Denoise Reads
@@ -410,12 +410,16 @@ plot_ordination(phy_obj, ord)
 
 We can also process the data pretty much exactly the same way with Nephele. I have some jobs that I've already completed; feel free to review and experiment with them.
 
-QC: `a78aa49df492` (https://nephele.niaid.nih.gov/results_page/a78aa49df492) DADA2: `8ced4dead96a` (https://nephele.niaid.nih.gov/results_page/8ced4dead96a)
+**QC**: [a2e52d4e7445](https://nephele.niaid.nih.gov/results_page/a2e52d4e7445)
 
-If you want to re-run one of these jobs, visit the main Nephele page (nephele.niaid.nih.gov) and place the job IDs above into the "Need to re-run a Nephele job?" text box.
+**DADA2**: [4cac15889e25](https://nephele.niaid.nih.gov/results_page/4cac15889e25)
 
-As you review the results, you'll notice that some components are a bit different, but broadly the same techniques are applied.
+If you want to re-run one of these jobs, visit the main Nephele page (nephele.niaid.nih.gov) and place the job IDs above into the "Need to re-run a Nephele job?" text box. Jobs remain available for 90 days, and I ran these on October 22, so they should be available for 3 more months.
+
+As you review the results, you'll notice that some specific tools or implementations are a bit different (ie, different phylogenetic tree builders, etc), but broadly the same techniques are applied.
 
 ## Wrap-up
 
-Thank you for joining today! If you have feedback, ideas for additional sessions, questions about your own project, etc, feel free to reach out to me (kathryn.mccauley@nih.gov) or make a ticket to work with the Bioinformatics team (https://niaid-amp.powerappsportals.us/) and we would be happy to assist.
+Thank you for joining today!
+
+If you have feedback, ideas for additional sessions/trainings, questions about your own project, etc, feel free to reach out to me (kathryn.mccauley@nih.gov) or make a ticket to meet with the Bioinformatics team (go to bioinformatics.niaid.nih.gov and click "Start Your Project Today"); we would be happy to assist!
