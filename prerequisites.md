@@ -61,17 +61,18 @@ following in your preferred directory.
 
 ### Downloading a Zip File
 
-You can also download a zip file of all materials by visiting the main
+You can also download a zip file of all materials.
+[The link here](https://github.com/ktmbiome-niaid/16S-data-processing/archive/refs/heads/main.zip) will start the download, but you can also obtain the files by visiting the main
 repository page
-(<https://github.com/ktmbiome-niaid/16S-data-processing/tree/main>) and
+(<https://github.com/ktmbiome-niaid/16S-data-processing/>) and
 then clicking on the green button that says `<Code>`. At the bottom of
 the menu, there is a button called `Download Zip` which will begin
-downloading the zip file you can extract.
+downloading the zip file.
 
 ## Bringing Your Own Data
 
-We plan to provide you with data to use on your own computer for
-analyzing during the tutorial. However, if you would like to analyze
+We will provide you with data to use for
+analysis during the tutorial. However, if you would like to analyze
 your own data, please bring some bring some! If you choose to
 go this route, be aware that your data will need to satisfy
 certain criteria:
@@ -132,7 +133,8 @@ Finally, if you have a large dataset, consider only working on \~10-20
 samples during the workshop. The methods we use should be flexible
 enough that you can apply the concepts to more samples after the
 workshop, and we’re always available for questions!
-(<bioinformatics@niaid.nih.gov>)
+
+Visit us at [bioinformatics.niaid.nih.gov](https://bioinformatics.niaid.nih.gov) to see more trainings or reach out to our team.
 
 Looking forward to having you!
 
